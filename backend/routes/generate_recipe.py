@@ -7,7 +7,7 @@ class GenerateRequest(BaseModel):
     ingredients: list[str]
 
 
-@router.post("/api/generate-recipe")
+@router.post("/generate-recipe")
 def generate_recipe(request:GenerateRequest):
     #später durch "echten" KI-Code ersetzen
     
