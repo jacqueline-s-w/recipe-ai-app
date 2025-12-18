@@ -6,8 +6,8 @@ export default function RecipeCard({ recipe }) {
       <p className="text-sm text-gray-600">⏱ {recipe.time} Minuten</p>
 
       <ul className="list-disc list-inside mt-2">
-        {recipe.ingredients.map((ing, idx) => (
-          <li key={idx}>{ing}</li>
+        {recipe.ingredients.map((ing) => (
+          <li key={ing}>{ing}</li>
         ))}
       </ul>
     </article>

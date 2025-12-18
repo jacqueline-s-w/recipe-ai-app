@@ -36,17 +36,15 @@ export default function IngredientInput({
           placeholder="z.B. Tomate, Käse, Basilikum"
         />
 
-        <button
-          // type="submit"
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
+        <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
           Hinzufügen
         </button>
       </form>
 
       {/*Zutatenliste */}
       <ul className="mt-4 list-disc list-inside">
-        {ingredients.map((ing, idx) => (
-          <li key={idx}>{ing}</li>
+        {ingredients.map((ing) => (
+          <li key={`ingredients-list-${ing}`}>{ing}</li>
         ))}
       </ul>
 
