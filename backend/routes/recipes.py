@@ -17,11 +17,13 @@ recipes=[
       {"title":"Pasta Bolo",
        "ingredients": ["Pasta","Hack"],
        "time":20,
+       "is_ai": False,
           
       },
 {"title":"Tomatensuppe",
        "ingredients": ["Tomaten","Zwiebeln"],
        "time":10,
+       "is_ai": False,
           
       },
 ]
@@ -33,6 +35,6 @@ recipes=[
 def get_recipes(request:IngredientsRequest):
     
     matching_recipes = find_matching_recipes(request.ingredients, recipes)
-    # print(result)
+    print(matching_recipes)
     return {"recipes":matching_recipes}
 

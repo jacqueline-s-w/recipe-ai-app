@@ -9,5 +9,6 @@ def generate_recipe_with_ai(ingredients: list[str]) ->dict:
             "Alles zusammen kochen",
             "servieren und genießen"
         ],
-        "time": 30    
+        "time": 30,
+        "is_ai": True,    
     }
