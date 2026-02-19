@@ -15,14 +15,21 @@ def find_matching_recipes(user_ingredients: list[str], recipes: list[dict]):
             normalized_recipe_ingredients=[
                  ingredient.lower().strip() 
                  for ingredient in recipe["ingredients"]]
+            
+            score= len(set(normalized_user_ingredients) & set(normalized_recipe_ingredients))
 
             # Prüfen, ob mindestens eine Zuatat passt
-            for ingredient in normalized_user_ingredients:
-                if ingredient in normalized_recipe_ingredients:
-                     result.append(recipe)
-                     break #Rezept nur einmal hinzufügen
+            # for ingredient in normalized_user_ingredients:
+                
+
+            #     if ingredient in normalized_recipe_ingredients:
+            #          score += 1
+            if score > 0:     
+                     result.append((score, recipe))
+                    
+    result.sort(reverse=True)
     if not result:
         ai_recipe = generate_recipe_with_ai(user_ingredients)
-        result.append(ai_recipe)
-    
+        result.append((0, ai_recipe))
     return result
+   
