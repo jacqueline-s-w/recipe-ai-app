@@ -14,4 +14,10 @@ recipes=[
             "is_ai": False,
             
             },
+            {"title":"Bruscetta",
+            "ingredients": ["Cherrytomaten","Zwiebeln","Öl", "Knoblauchzehen"],
+            "time":10,
+            "is_ai": False,
+            
+            },
 ]
