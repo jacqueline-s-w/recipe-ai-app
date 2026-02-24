@@ -35,7 +35,7 @@ def calculate_match_score(user_ingredients: list[str], recipe_ingredients):
                        break #doppelte Treffervermeiden
 
      return score
-
+print(calculate_match_score(["Hack"], ["Hack"]))
 # calculate_match_percent
 # keine Liste als Default, Funktion ist unabhängig und weiß nichts über Zutatenlisten
 # Möglichkeiten: die Prozent-Logik ändern,Rundung anpassen, Gewichtung einbauen, Ohne mein Matching anzufassen.
@@ -45,7 +45,7 @@ def calculate_match_percent(score: int, total_user_count:int)->float:
             return 0.0
       return round((score / total_user_count)*100, 2)
       
-
+print(calculate_match_percent(1, 3))
 
 
 def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
@@ -56,15 +56,12 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
           
           percent= calculate_match_percent(score, len(user_ingredients))
 
-                     
-     if percent >=30:     
-          result.append({"match_percent": percent,"recipe": recipe})
+          print(recipe["title"], score, percent)
+          if percent >=30:     
+               result.append({"match_percent": percent,"recipe": recipe})
                     
-     result.sort(key=lambda x:x["match_percent"] ,reverse=True)
-     
-     
+     result.sort(key=lambda x:x["match_percent"],reverse=True)
      return result
-   
 
 #  get_recipes_with_fallback
 def get_recipes_with_fallback(user_ingredients, recipes):
