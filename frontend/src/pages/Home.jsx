@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import IngredientInput from '../components/IngredientInput';
 import RecipeList from '../components/RecipeList';
@@ -6,8 +6,20 @@ import RecipeList from '../components/RecipeList';
 export default function Home() {
   const [ingredients, setIngredients] = useState([]);
   const [recipes, setRecipes] = useState([]);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    if (ingredients.length > 0) {
+      setError('');
+    }
+  }, [ingredients]);
   // Rezepte anhand der Zutaten abrufen
   async function findRecipes() {
+    // setError('');
+
+    if (ingredients.length === 0) {
+      setError('Bitte gib mindestens eine Zutat ein.');
+      return;
+    }
     try {
       const res = await fetch('http://localhost:8000/api/recipes', {
         method: 'POST',
@@ -29,6 +41,7 @@ export default function Home() {
         setIngredients={setIngredients}
         onFindRecipes={findRecipes}
       />
+      {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
 
       <RecipeList recipes={recipes} />
     </div>

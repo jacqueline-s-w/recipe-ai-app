@@ -2,17 +2,17 @@ from services.ai_service import generate_recipe_with_ai
 
 # normalize_word
 def normalize_word(word:str)->str:
-      word= word.lower().strip()
-      if word.endswith("en"):
-            return word[:-2]
-      if word.endswith("n"):
-            return word[:-1]
-      return word
+     #  word= word.lower().strip()
+     #  if word.endswith("en"):
+     #        return word[:-2]
+     #  if word.endswith("n"):
+     #        return word[:-1]
+      return word.lower().strip()
 
 # calculate_match_score (singular und substring-logik) NUR für EIN Rezept verantwortlich, keine Schleife über alle Rezepte
 def calculate_match_score(user_ingredients: list[str], recipe_ingredients):
      # User-Zutaten normalisieren
-     normalized_user_ingredients=[ingredient.lower().strip()
+     normalized_user_ingredients=[normalize_word(ingredient)
      for ingredient in user_ingredients]
 
      
@@ -21,6 +21,8 @@ def calculate_match_score(user_ingredients: list[str], recipe_ingredients):
           normalize_word(ingredient.lower().strip())
                  for ingredient in recipe_ingredients
                  ]
+     print("USER:",normalized_user_ingredients)
+     print("RECIPE:", normalized_recipe_ingredients)
             
      score=0
             
