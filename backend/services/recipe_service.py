@@ -1,5 +1,26 @@
 from services.ai_service import generate_recipe_with_ai
 
+import re
+STOP_INGREDIENTS = {
+    "salz",
+    "pfeffer",
+    "öl",
+    "wasser"
+}
+def tokenize_ingredient(text):
+      text= text.lower().strip()
+      return re.findall(r"\b\w+\b", text)
+       
+def process_ingredients(ingredients):
+      tokens=set()
+      for ingredient in ingredients:
+          word_tokens= tokenize_ingredient(ingredient)
+          for token in word_tokens:
+               if token not in STOP_INGREDIENTS:
+                    tokens.add(token)
+      return tokens               
+
+
 # normalize_word
 def normalize_word(word:str)->str:
      #  word= word.lower().strip()
