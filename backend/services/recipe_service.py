@@ -12,10 +12,11 @@ def tokenize_ingredient(text):
       return re.findall(r"\b\w+\b", text)
        
 def process_ingredients(ingredients):
-      tokens=set()
+      tokens=set() # Mit set() Duplikate vermeiden, Schnittmenge später einfach
       for ingredient in ingredients:
           word_tokens= tokenize_ingredient(ingredient)
           for token in word_tokens:
+               # __________________________________________________________________________________________________________________________
                if token not in STOP_INGREDIENTS:
                     tokens.add(token)
       return tokens               
