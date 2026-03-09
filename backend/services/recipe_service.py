@@ -16,9 +16,8 @@ def process_ingredients(ingredients):
       for ingredient in ingredients:
           word_tokens= tokenize_ingredient(ingredient)
           for token in word_tokens:
-               # __________________________________________________________________________________________________________________________
                if token not in STOP_INGREDIENTS:
-                    tokens.add(token)
+                tokens.add(token)
       return tokens               
 
 
