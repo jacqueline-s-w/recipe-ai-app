@@ -11,7 +11,7 @@ class GenerateRequest(BaseModel):
 def generate_recipe(request:GenerateRequest):
     #später durch "echten" KI-Code ersetzen
     
-    return {"recipe": {"title":"Platzhalter-Rezept",
+    return {"recipe": {"title":"Platzhalter-Rezept",                   
     "steps":["Schritt 1", "Schritt 2"],
     "igredients_used": request.ingredients
     }}

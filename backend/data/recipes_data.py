@@ -1,8 +1,32 @@
 recipes=[
     {"title": "Pasta Primavera",
-     "ingredients": ["Pasta", "Gemüse","Öl", "Knoblauch", "Zwiebel"],
-      "time":20, },
-      {"title":"Pasta Bolo Deluxe",
+     "time":20,
+     "portionen":"4-6",
+     "ingredients": [
+    "Pasta (Penne) 500g",
+    "grüner Spargel 400g",
+    "rote Zwiebel 1",
+    "gelbe Paprika 1",
+    "Radieschen 8",
+    "Kirschtomaten 300g",
+    "frische Erbsen 200g",
+    "pflanzliche Sahne 100ml",
+    "Weißweinessig 1TL",
+    "Hefeflocken 2EL",
+    "Zitrone 0.5",
+    "Pflanzenöl zum Braten",
+    "Basilikum zum Servieren",
+    "Kresse zum Servieren",
+    "Salz",
+    "Pfeffer",
+    "Zucker"
+],
+                      "Zubereitung":
+                      """1.Zunächst das Gemüse vorbereiten und gegebenenfalls vorher waschen: Die eventuell trockenen Enden des grünen Spargels abknapsen und sie in mundgerechte Stücke schneiden. Rote Zwiebel fein würfeln, Paprika würfeln, Radieschen in Scheiben schneiden und die Kirschtomaten halbieren. Die Erbsen oder Zuckerschoten etwas kleiner schneiden.\n
+                      2.Gesalzenes Wasser in einem großen Topf zum Kochen bringen und die Nudeln je nach Packungsangabe kochen, jedoch ca. 2 Minuten weniger als angegeben. Vor dem Abgießen ca. 100 ml des Kochwassers abschöpfen und beiseitestellen.\n
+                      3.Während die Nudeln kochen, Pflanzenöl in einer großen Pfanne erhitzen und zuerst die roten Zwiebelwürfel ca. 1-2 Minuten anschwitzen, bis sie glasig werden. Grünen Spargel und Paprikawürfel dazugeben und weitere 3-4 Minuten braten. Mit etwas Zucker und Salz würzen. Nun die Erbsen dazugeben und ca. 2 Minuten anbraten.\n
+                      4.Pflanzliche Sahne, Weißweinessig und Hefeflocken dazugeben. Den Abrieb und den Saft einer halben (gewaschenen) Zitrone in die Pfanne geben und alles gut durchschwenken und mit Salz und Pfeffer abschmecken.\n
+                      5.Zum Schluss Radieschen, Tomaten und die gekochten Nudeln dazugeben und so viel Kochwasser der Nudeln dazugeben, bis die Soße alle Zutaten gut ummantelt und gemeinsam ca. 1-2 Minuten erwärmen.\n6.In einer großen Schüssel servieren und mit frischem Basilikum und Kresse bestreuen."""},{"title":"Pasta Bolo Deluxe",
        "ingredients": ["Pasta","Hack", "Öl", "Knoblauch","Tomate", "Tomatenmark", "Zwiebel", "Karotte", "Sellerie", "Rotwein", "Salz", "Pfeffer", "Oregano"],
        "time":20,
        "is_ai": False,
