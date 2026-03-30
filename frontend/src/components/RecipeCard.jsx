@@ -26,6 +26,11 @@ export default function RecipeCard({ recipe, matchPercent }) {
           <li key={ing}>{ing}</li>
         ))}
       </ul>
+      <ul>
+        {recipe.zubereitung.map((zub) => (
+          <li key={zub}>{zub}</li>
+        ))}
+      </ul>
     </article>
   );
 }
