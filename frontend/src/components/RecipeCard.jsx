@@ -20,7 +20,8 @@ export default function RecipeCard({ recipe, matchPercent }) {
       <h3 className="text-xl font-semibold">{recipe.title}</h3>
 
       <p className="text-sm text-gray-600">⏱ {recipe.time} Minuten</p>
-
+      <img src=""></img>
+      <h4 className="mt-2 font font-bold">Zutaten:</h4>
       <ul className="list-disc list-inside mt-2">
         {recipe.ingredients.map((ing) => (
           <li key={ing}>{ing}</li>
@@ -28,7 +29,9 @@ export default function RecipeCard({ recipe, matchPercent }) {
       </ul>
       <ul className="list-decimal list-inside mt-2 space-y-4">
         {recipe.zubereitung.map((zub) => (
-          <li key={zub}>{zub}</li>
+          <li className="marker:font-bold" key={zub}>
+            {zub}
+          </li>
         ))}
       </ul>
     </article>
