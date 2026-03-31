@@ -26,7 +26,7 @@ export default function RecipeCard({ recipe, matchPercent }) {
           <li key={ing}>{ing}</li>
         ))}
       </ul>
-      <ul>
+      <ul className="list-decimal list-inside mt-2 space-y-4">
         {recipe.zubereitung.map((zub) => (
           <li key={zub}>{zub}</li>
         ))}
