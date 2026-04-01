@@ -17,6 +17,10 @@ export default function RecipeCard({ recipe, matchPercent }) {
           AI-Vorschlag
         </div>
       )}
+      <img
+        src={recipe.image}
+        alt={recipe.title}
+        className="w-full h-48 object-cover rounded-md mb-3"></img>
       <h3 className="text-xl font-semibold">{recipe.title}</h3>
 
       <p className="text-sm text-gray-600">⏱ {recipe.time} Minuten</p>

@@ -2,6 +2,7 @@ recipes=[
     {"title": "Pasta Primavera",
      "time":20,
      "portionen":"4-6",
+     "image": "images/pasta_primavera.jpg",
      "ingredients": [
     "Pasta (Penne) 500g",
     "grüner Spargel 400g",
