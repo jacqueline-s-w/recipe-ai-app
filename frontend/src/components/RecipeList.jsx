@@ -12,6 +12,7 @@ export default function RecipeList({ recipes }) {
                 <RecipeCard
                   recipe={item.recipe}
                   matchPercent={item.match_percent}
+                  missingIngredients={item.missing_ingredients}
                 />
               </li>
             ))}

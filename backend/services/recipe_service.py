@@ -7,6 +7,14 @@ STOP_INGREDIENTS = {
     "öl",
     "wasser"
 }
+
+STOPWORDS = {
+    "zum", "zur", "der", "die", "das",
+    "und", "oder", "mit", "für",
+    "etwas", "frisch", "frische",
+    "klein", "groß"
+}
+
 def tokenize_ingredient(text):
       text= text.lower().strip()
       return re.findall(r"\b\w+\b", text)
@@ -16,7 +24,7 @@ def process_ingredients(ingredients):
       for ingredient in ingredients:
           word_tokens= tokenize_ingredient(ingredient)
           for token in word_tokens:
-               if token not in STOP_INGREDIENTS:
+               if (token not in STOP_INGREDIENTS and token not in STOPWORDS and not token.isdigit() and len(token)>2):
                 tokens.add(token)
       return tokens               
 
@@ -74,7 +82,15 @@ def normalize_word(word:str)->str:
 
 # 
 
-#
+def get_missing_ingredients(recipe_ingredients, user_tokens):
+     missing_clean=[]
+     for ingredient in recipe_ingredients:
+          ingredient_tokens= tokenize_ingredient(ingredient)
+
+          #prüfen: kommt irgendein token im user vor?
+          if not any(token in user_tokens for token in ingredient_tokens):
+               missing_clean.append(ingredient)
+     return missing_clean
 
 def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
      
@@ -85,19 +101,28 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
      for recipe in recipes:
           #PRO REZEPT
           recipe_tokens=process_ingredients(recipe["ingredients"])
+
           matches= user_tokens & recipe_tokens
+
+          missing_tokens=recipe_tokens-user_tokens
+          # missing_list=sorted(missing_tokens)
           #Schutz gegen Division durch 0
-          if len(user_tokens)== 0 or len(recipe_tokens)==0:
-               continue
+          # if len(user_tokens)== 0 or len(recipe_tokens)==0:
+          #      continue
           score_user = len(matches) / len(user_tokens)
           # score = calculate_match_score(user_ingredients, recipe["ingredients"])
           score_recipe = len(matches) / len(recipe_tokens)
           # percent= calculate_match_percent(score, len(user_ingredients))
           score = (score_user * 0.7) + (score_recipe * 0.3)
           percent = round(score * 100, 2)
+
+          missing_clean= get_missing_ingredients(
+               recipe["ingredients",
+                      user_tokens]
+          )
           print(recipe["title"], score, percent)
           if percent >=30:     
-               result.append({"match_percent": percent,"recipe": recipe})
+               result.append({"match_percent": percent,"missing_ingredients":missing_clean,"recipe": recipe})
                     
      result.sort(key=lambda x:x["match_percent"],reverse=True)
      print("USER:", user_tokens)

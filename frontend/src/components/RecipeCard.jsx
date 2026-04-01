@@ -1,4 +1,8 @@
-export default function RecipeCard({ recipe, matchPercent }) {
+export default function RecipeCard({
+  recipe,
+  matchPercent,
+  missingIngredients,
+}) {
   function getMatchColor(percent) {
     if (percent >= 70) return 'bg-green-500';
     if (percent >= 40) return 'bg-yellow-500';
@@ -31,6 +35,11 @@ export default function RecipeCard({ recipe, matchPercent }) {
           <li key={ing}>{ing}</li>
         ))}
       </ul>
+      {missingIngredients?.length > 0 && (
+        <div className="mt-2 text-sm text-red-500">
+          Fehlt:{missingIngredients.join(', ')}
+        </div>
+      )}
       <ul className="list-decimal list-inside mt-2 space-y-4">
         {recipe.zubereitung.map((zub) => (
           <li className="marker:font-bold" key={zub}>
