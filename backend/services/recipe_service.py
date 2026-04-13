@@ -104,25 +104,25 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
 
           matches= user_tokens & recipe_tokens
 
-          missing_tokens=recipe_tokens-user_tokens
+          missing_tokens=recipe_tokens - user_tokens
           # missing_list=sorted(missing_tokens)
           #Schutz gegen Division durch 0
           # if len(user_tokens)== 0 or len(recipe_tokens)==0:
           #      continue
-          score_user = len(matches) / len(user_tokens)
+          score_user = len(matches) / len(user_tokens) if user_tokens else 0
           # score = calculate_match_score(user_ingredients, recipe["ingredients"])
-          score_recipe = len(matches) / len(recipe_tokens)
+          score_recipe = len(matches) / len(recipe_tokens) if recipe_tokens else 0
           # percent= calculate_match_percent(score, len(user_ingredients))
           score = (score_user * 0.7) + (score_recipe * 0.3)
           percent = round(score * 100, 2)
 
-          missing_clean= get_missing_ingredients(
-               recipe["ingredients",
-                      user_tokens]
-          )
+          # missing_clean= get_missing_ingredients(
+          #      recipe["ingredients",
+          #             user_tokens]
+          # )
           print(recipe["title"], score, percent)
           if percent >=30:     
-               result.append({"match_percent": percent,"missing_ingredients":missing_clean,"recipe": recipe})
+               result.append({"match_percent": percent,"missing_ingredients":list(missing_tokens),"recipe": recipe})
                     
      result.sort(key=lambda x:x["match_percent"],reverse=True)
      print("USER:", user_tokens)
