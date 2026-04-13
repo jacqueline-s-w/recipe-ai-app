@@ -95,7 +95,7 @@ def get_missing_ingredients(recipe_ingredients, user_tokens):
 def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
      
      result=[]
-     #EINMAL
+     #EINMAL: User-Zutaten normalisieren 
      user_tokens=process_ingredients(user_ingredients) 
 
      for recipe in recipes:
@@ -116,18 +116,20 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
           score = (score_user * 0.7) + (score_recipe * 0.3)
           percent = round(score * 100, 2)
 
-          # missing_clean= get_missing_ingredients(
-          #      recipe["ingredients",
-          #             user_tokens]
-          # )
+          # Debug-Ausgaben (jetzt korrekt innerhalb der Schleife)
+          print("USER:", user_tokens)
+          print("RECIPE:", recipe_tokens)
+          print("MATCHES:", matches)
+          missing_clean= get_missing_ingredients(
+               recipe["ingredients"],
+                      user_tokens
+          )
           print(recipe["title"], score, percent)
           if percent >=30:     
-               result.append({"match_percent": percent,"missing_ingredients":list(missing_tokens),"recipe": recipe})
+               result.append({"match_percent": percent,"missing_ingredients":missing_clean,"recipe": recipe})
                     
      result.sort(key=lambda x:x["match_percent"],reverse=True)
-     print("USER:", user_tokens)
-     print("RECIPE:", recipe_tokens)
-     print("MATCHES:", matches)
+    
      return result
 
 #  get_recipes_with_fallback
