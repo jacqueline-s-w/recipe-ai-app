@@ -12,31 +12,65 @@ STOPWORDS = {
     "zum", "zur", "der", "die", "das",
     "und", "oder", "mit", "für",
     "etwas", "frisch", "frische",
-    "klein", "groß"
+    "klein", "groß", "vegan", "vegane", "vegetarisch", "vegetarische",
 }
+
+SYNONYMS={
+     "zwiebel": {"zwiebel", "zwiebeln", "rote zwiebel", "schalotte", "schalotten"},
+    "knoblauch": {"knoblauch", "knoblauchzehe", "knoblauchzehen"},
+    "tomate": {"tomate", "tomaten", "kirschtomate", "kirschtomaten"},
+    "paprika": {"paprika", "paprikaschote", "paprikaschoten"},
+    "karotte": {"karotte", "karotten", "möhre", "möhren"},
+    "sellerie": {"sellerie", "stangensellerie"},
+}
+
+def expand_synonyms(token):
+     for key, group in SYNONYMS.items():
+          if token in group:
+               return group
+          return {token}
 
 def tokenize_ingredient(text):
       text= text.lower().strip()
       return re.findall(r"\b\w+\b", text)
        
 def process_ingredients(ingredients):
-      tokens=set() # Mit set() Duplikate vermeiden, Schnittmenge später einfach
-      for ingredient in ingredients:
-          word_tokens= tokenize_ingredient(ingredient)
-          for token in word_tokens:
-               if (token not in STOP_INGREDIENTS and token not in STOPWORDS and not token.isdigit() and len(token)>2):
+    tokens = set()
+
+    for ingredient in ingredients:
+        word_tokens = tokenize_ingredient(ingredient)
+
+        for token in word_tokens:
+            token = normalize(token)
+
+            if (
+                token not in STOP_INGREDIENTS
+                and token not in STOPWORDS
+                and not token.isdigit()
+                and len(token) > 2
+            ):
                 tokens.add(token)
-      return tokens               
+
+    return tokens
+          
 
 
 # normalize_word
-def normalize_word(word:str)->str:
-     #  word= word.lower().strip()
-     #  if word.endswith("en"):
-     #        return word[:-2]
-     #  if word.endswith("n"):
-     #        return word[:-1]
-      return word.lower().strip()
+def normalize(word):
+    word = word.lower().strip()
+
+    # einfache Plural-Singular-Regeln
+    if word.endswith("en"):
+        word = word[:-2]
+    elif word.endswith("n"):
+        word = word[:-1]
+    elif word.endswith("e"):
+        word = word[:-1]
+    elif word.endswith("s"):
+        word = word[:-1]
+
+    return word
+
 #_______________________________________________________________________________________________________
 # calculate_match_score (singular und substring-logik) NUR für EIN Rezept verantwortlich, keine Schleife über alle Rezepte
 # def calculate_match_score(user_ingredients: list[str], recipe_ingredients):
@@ -86,9 +120,11 @@ def get_missing_ingredients(recipe_ingredients, user_tokens):
      missing_clean=[]
      for ingredient in recipe_ingredients:
           ingredient_tokens= tokenize_ingredient(ingredient)
-
+          # Tokens normalisieren!
+          ingredient_tokens = {normalize(t) for t in ingredient_tokens}
           #prüfen: kommt irgendein token im user vor?
-          if not any(token in user_tokens for token in ingredient_tokens):
+          if not any(expand_synonyms(token) & user_tokens for token in ingredient_tokens):
+
                missing_clean.append(ingredient)
      return missing_clean
 
@@ -100,9 +136,27 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
 
      for recipe in recipes:
           #PRO REZEPT
-          recipe_tokens=process_ingredients(recipe["ingredients"])
+          # recipe_tokens=process_ingredients(recipe["ingredients"])
+          recipe_tokens = process_ingredients(recipe["ingredients"])
 
-          matches= user_tokens & recipe_tokens
+
+          matches = set()
+          for ut in user_tokens:
+                user_group = expand_synonyms(ut)
+                for rt in recipe_tokens:
+                     recipe_group = expand_synonyms(rt)
+                     if user_group & recipe_group:
+                          matches.add(rt)
+            
+
+       
+        
+
+    
+   
+
+
+
 
           missing_tokens=recipe_tokens - user_tokens
           # missing_list=sorted(missing_tokens)
