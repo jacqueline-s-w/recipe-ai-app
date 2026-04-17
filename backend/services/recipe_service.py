@@ -72,49 +72,7 @@ def normalize(word):
     return word
 
 #_______________________________________________________________________________________________________
-# calculate_match_score (singular und substring-logik) NUR für EIN Rezept verantwortlich, keine Schleife über alle Rezepte
-# def calculate_match_score(user_ingredients: list[str], recipe_ingredients):
-     # User-Zutaten normalisieren
-     # normalized_user_ingredients=[normalize_word(ingredient)
-     # for ingredient in user_ingredients]
 
-     
-     # Rezept-Zutaten normalisieren
-     # normalized_recipe_ingredients=[
-     #      normalize_word(ingredient.lower().strip())
-     #             for ingredient in recipe_ingredients
-     #             ]
-     # print("USER:",normalized_user_ingredients)
-     # print("RECIPE:", normalized_recipe_ingredients)
-            
-     # score=0
-            
-     # for user_word in normalized_user_ingredients:
-     #         for recipe_word in normalized_recipe_ingredients:
-     #              if(
-     #                   user_word == recipe_word
-     #                   or user_word in recipe_word
-     #                   or recipe_word in user_word
-     #              ):
-     #                   score += 1
-     #                   break #doppelte Treffervermeiden
-
-#      return score
-# print(calculate_match_score(["Hack"], ["Hack"]))
-# calculate_match_percent
-# keine Liste als Default, Funktion ist unabhängig und weiß nichts über Zutatenlisten
-# Möglichkeiten: die Prozent-Logik ändern,Rundung anpassen, Gewichtung einbauen, Ohne mein Matching anzufassen.
-#_____________________________________________________________________________
-# def calculate_match_percent(score: int, total_user_count:int)->float:
-#       if (total_user_count) == 0:
-#             return 0.0
-#       return round((score / total_user_count)*100, 2)
-      
-# print(calculate_match_percent(1, 3))
-# _________________________________________________________________________________
-
-
-# 
 
 def get_missing_ingredients(recipe_ingredients, user_tokens):
      missing_clean=[]
