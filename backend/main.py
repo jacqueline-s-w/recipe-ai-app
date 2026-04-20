@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware;
 from routes.recipes import router as recipes_router
 from routes.generate_recipe import router as generate_recipes_router
 
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 

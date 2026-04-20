@@ -11,6 +11,7 @@ export default function RecipeCard({
 
   // Fallbacks
   const image = recipe.image || '/placeholder.jpg';
+
   const steps = recipe.zubereitung || recipe.steps || [];
 
   return (
