@@ -10,59 +10,76 @@ from groq import Groq
 # API Keys
 # -------------------------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-FAL_API_KEY = os.getenv("FAL_API_KEY")   # <-- DEIN FAL KEY
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-client = Groq(api_key=GROQ_API_KEY)
-
-print("Verfügbare Groq-Modelle:")
-for m in client.models.list().data:
-    print("-", m.id)
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 print("GROQ KEY:", GROQ_API_KEY)
-print("FAL KEY:", FAL_API_KEY)
+print("OPENROUTER KEY:", OPENROUTER_API_KEY)
 
 
 # -------------------------------------------------------------------
-# Bildgenerierung mit FAL.AI (kostenlos)
+# Bildgenerierung über OpenRouter (Stable Diffusion XL)
 # -------------------------------------------------------------------
 def generate_image_from_prompt(prompt: str) -> str:
-    url = "https://fal.run/fal-ai/flux-lora"
+    url = "https://openrouter.ai/api/v1/images"
 
     headers = {
-        "Authorization": f"Bearer {FAL_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
     payload = {
+        "model": "black-forest-labs/flux-1.1-lite",
         "prompt": prompt,
-        "image_size": "square"
+        "size": "1024x1024"
     }
 
     response = requests.post(url, headers=headers, json=payload)
 
-    if response.status_code != 200:
-        print("IMAGE ERROR:", response.text)
+    # Falls OpenRouter HTML zurückgibt → Fehler anzeigen
+    try:
+        data = response.json()
+    except:
+        print("IMAGE ERROR: Server lieferte keine JSON-Antwort:")
+        print(response.text[:500])  # nur die ersten 500 Zeichen
         return None
 
-    data = response.json()
+    if "data" not in data:
+        print("IMAGE ERROR:", data)
+        return None
 
-    # Fal.ai liefert direkte Bild-URLs
-    image_url = data["images"][0]["url"]
+    image_url = data["data"][0]["url"]
 
-    return image_url  # keine Speicherung nötig!
+    # Bild herunterladen
+    image_bytes = requests.get(image_url).content
+
+    filename = f"generated_{abs(hash(prompt))}.png"
+    filepath = f"static/{filename}"
+
+    with open(filepath, "wb") as f:
+        f.write(image_bytes)
+
+    return f"http://localhost:8000/static/{filename}"
 
 
-# -------------------------------------------------------------------
-# Rezeptgenerierung mit Groq
+
+# -----------------------------------------------------------------
+# Rezeptgenerierung mit Groq (stabil)
 # -------------------------------------------------------------------
 def generate_recipe_with_ai(ingredients: list[str]) -> dict:
     ingredients_text = ", ".join(ingredients)
 
-    prompt = f"""
+    system_prompt = """
+Du bist ein JSON-Generator. Antworte IMMER mit gültigem JSON.
+Kein Text vor oder nach dem JSON. Keine Erklärungen.
+"""
+
+    user_prompt = f"""
 Erstelle ein veganes Rezept auf Deutsch basierend auf diesen Zutaten:
 {ingredients_text}
 
-Antworte ausschließlich als JSON im folgenden Format:
+Gib ausschließlich folgendes JSON zurück:
 
 {{
   "title": "string",
@@ -73,16 +90,24 @@ Antworte ausschließlich als JSON im folgenden Format:
 """
 
     try:
-        response = client.chat.completions.create(
+        response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.2
         )
 
         content = response.choices[0].message.content
+
+        # JSON reparieren falls nötig
+        content = content.strip()
+        if content.startswith("```"):
+            content = content.split("```")[1].strip()
+
         data = json.loads(content)
 
-        # Bild generieren (Fal.ai)
         image_url = generate_image_from_prompt(data["image_prompt"])
 
         return {
