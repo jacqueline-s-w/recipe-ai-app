@@ -3,6 +3,7 @@ load_dotenv()
 
 import os
 import json
+import base64
 import requests
 from groq import Groq
 
@@ -10,50 +11,55 @@ from groq import Groq
 # API Keys
 # -------------------------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OAI_API_KEY = os.getenv("OAI_API_KEY")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 print("GROQ KEY:", GROQ_API_KEY)
-print("OPENROUTER KEY:", OPENROUTER_API_KEY)
+print("OPENAI KEY:", OAI_API_KEY)
 
 
 # -------------------------------------------------------------------
-# Bildgenerierung über OpenRouter (Stable Diffusion XL)
+# Bildgenerierung über OpenAI (gpt-image-1.5)
 # -------------------------------------------------------------------
 def generate_image_from_prompt(prompt: str) -> str:
-    url = "https://openrouter.ai/api/v1/images"
+    url = "https://api.openai.com/v1/images/generations"
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {OAI_API_KEY}",
         "Content-Type": "application/json"
     }
 
     payload = {
-        "model": "black-forest-labs/flux-1.1-lite",
+        "model": "gpt-image-1.5",
         "prompt": prompt,
         "size": "1024x1024"
     }
 
     response = requests.post(url, headers=headers, json=payload)
 
-    # Falls OpenRouter HTML zurückgibt → Fehler anzeigen
+    # Fehlerbehandlung
     try:
         data = response.json()
     except:
-        print("IMAGE ERROR: Server lieferte keine JSON-Antwort:")
-        print(response.text[:500])  # nur die ersten 500 Zeichen
+        print("IMAGE ERROR: OpenAI lieferte keine JSON-Antwort:")
+        print(response.text[:500])
         return None
 
     if "data" not in data:
         print("IMAGE ERROR:", data)
         return None
 
-    image_url = data["data"][0]["url"]
+    # Base64 extrahieren
+    b64_data = data["data"][0].get("b64_json")
+    if not b64_data:
+        print("IMAGE ERROR: Kein b64_json erhalten:", data)
+        return None
 
-    # Bild herunterladen
-    image_bytes = requests.get(image_url).content
+    # Base64 decodieren
+    image_bytes = base64.b64decode(b64_data)
 
+    # Datei speichern
     filename = f"generated_{abs(hash(prompt))}.png"
     filepath = f"static/{filename}"
 
@@ -63,8 +69,7 @@ def generate_image_from_prompt(prompt: str) -> str:
     return f"http://localhost:8000/static/{filename}"
 
 
-
-# -----------------------------------------------------------------
+# -------------------------------------------------------------------
 # Rezeptgenerierung mit Groq (stabil)
 # -------------------------------------------------------------------
 def generate_recipe_with_ai(ingredients: list[str]) -> dict:
@@ -108,6 +113,7 @@ Gib ausschließlich folgendes JSON zurück:
 
         data = json.loads(content)
 
+        # Bild passend zum Rezept generieren
         image_url = generate_image_from_prompt(data["image_prompt"])
 
         return {

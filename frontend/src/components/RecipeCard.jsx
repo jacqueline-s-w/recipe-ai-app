@@ -10,7 +10,7 @@ export default function RecipeCard({
   }
 
   // Fallbacks
-  const image = recipe.image || '/placeholder.jpg';
+  const imageUrl = recipe.image || '/placeholder.jpg';
 
   const steps = recipe.zubereitung || recipe.steps || [];
 
@@ -31,7 +31,7 @@ export default function RecipeCard({
 
       {/* Bild */}
       <img
-        src={image}
+        src={imageUrl}
         alt={recipe.title}
         className="w-full h-48 object-cover rounded-md mb-3"
       />
