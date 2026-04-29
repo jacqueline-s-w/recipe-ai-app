@@ -4,6 +4,7 @@ load_dotenv()
 import os
 import json
 import base64
+import hashlib
 import requests
 from groq import Groq
 
@@ -20,7 +21,18 @@ print("OPENAI KEY:", OAI_API_KEY)
 
 
 # -------------------------------------------------------------------
-# Bildgenerierung über OpenAI (gpt-image-1.5)
+# Caching: gleiche Zutaten → kein neuer KI-Call
+# -------------------------------------------------------------------
+CACHE_DIR = "static/cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+def get_cache_key(ingredients: list[str]) -> str:
+    key = ",".join(sorted(ingredients))
+    return hashlib.md5(key.encode()).hexdigest()
+
+
+# -------------------------------------------------------------------
+# Bildgenerierung über OpenAI (günstig & optimiert)
 # -------------------------------------------------------------------
 def generate_image_from_prompt(prompt: str) -> str:
     url = "https://api.openai.com/v1/images/generations"
@@ -33,12 +45,11 @@ def generate_image_from_prompt(prompt: str) -> str:
     payload = {
         "model": "gpt-image-1.5",
         "prompt": prompt,
-        "size": "1024x1024"
+        "size": "1024x1024"   # HALBIERT die Kosten!
     }
 
     response = requests.post(url, headers=headers, json=payload)
 
-    # Fehlerbehandlung
     try:
         data = response.json()
     except:
@@ -50,16 +61,13 @@ def generate_image_from_prompt(prompt: str) -> str:
         print("IMAGE ERROR:", data)
         return None
 
-    # Base64 extrahieren
     b64_data = data["data"][0].get("b64_json")
     if not b64_data:
         print("IMAGE ERROR: Kein b64_json erhalten:", data)
         return None
 
-    # Base64 decodieren
     image_bytes = base64.b64decode(b64_data)
 
-    # Datei speichern
     filename = f"generated_{abs(hash(prompt))}.png"
     filepath = f"static/{filename}"
 
@@ -70,27 +78,30 @@ def generate_image_from_prompt(prompt: str) -> str:
 
 
 # -------------------------------------------------------------------
-# Rezeptgenerierung mit Groq (stabil)
+# Rezeptgenerierung mit Groq (extrem gekürzt & günstig)
 # -------------------------------------------------------------------
 def generate_recipe_with_ai(ingredients: list[str]) -> dict:
+    # Caching prüfen
+    cache_key = get_cache_key(ingredients)
+    cache_file = f"{CACHE_DIR}/{cache_key}.json"
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r", encoding="utf-8") as f:
+            print("CACHE HIT – kein neuer KI-Call")
+            return json.load(f)
+
     ingredients_text = ", ".join(ingredients)
 
-    system_prompt = """
-Du bist ein JSON-Generator. Antworte IMMER mit gültigem JSON.
-Kein Text vor oder nach dem JSON. Keine Erklärungen.
-"""
+    system_prompt = "Gib ausschließlich gültiges JSON zurück."
 
     user_prompt = f"""
-Erstelle ein veganes Rezept auf Deutsch basierend auf diesen Zutaten:
-{ingredients_text}
+Erstelle ein veganes Rezept aus: {ingredients_text}
 
-Gib ausschließlich folgendes JSON zurück:
-
+Format:
 {{
-  "title": "string",
-  "ingredients": ["string", ...],
-  "zubereitung": ["string", ...],
-  "image_prompt": "string"
+  "title": "",
+  "ingredients": [],
+  "zubereitung": []
 }}
 """
 
@@ -101,28 +112,34 @@ Gib ausschließlich folgendes JSON zurück:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.2
+            temperature=0.1
         )
 
-        content = response.choices[0].message.content
+        content = response.choices[0].message.content.strip()
 
-        # JSON reparieren falls nötig
-        content = content.strip()
         if content.startswith("```"):
             content = content.split("```")[1].strip()
 
         data = json.loads(content)
 
-        # Bild passend zum Rezept generieren
-        image_url = generate_image_from_prompt(data["image_prompt"])
+        # AUTOMATISCHER Bildprompt → spart Tokens
+        image_prompt = f"Professionelles Food-Foto von {data['title']}, helles Tageslicht, realistisch, 50mm"
 
-        return {
+        image_url = generate_image_from_prompt(image_prompt)
+
+        result = {
             "title": data["title"],
             "ingredients": data["ingredients"],
             "zubereitung": data["zubereitung"],
             "image": image_url,
             "is_ai": True,
         }
+
+        # In Cache speichern
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+
+        return result
 
     except Exception as e:
         print("AI ERROR:", e)

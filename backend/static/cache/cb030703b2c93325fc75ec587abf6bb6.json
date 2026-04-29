@@ -1,0 +1,26 @@
+{
+  "title": "Vegane Erdbeeren-Torte",
+  "ingredients": [
+    "250g Erdbeeren",
+    "150g Mandelmehl",
+    "100g Kokoszucker",
+    "50g Kokosöl",
+    "1/2 TL Vanille-Extrakt",
+    "1/4 TL Salz",
+    "100ml Pflanzendrink (z.B. Mandelmilch oder Sojamilch)"
+  ],
+  "zubereitung": [
+    "Den Backofen auf 180°C vorheizen.",
+    "Eine Springform mit Kokosöl einreiben.",
+    "Die Erdbeeren waschen, putzen und in kleine Stücke schneiden.",
+    "In einer Schüssel Mandelmehl, Kokoszucker, Salz und Vanille-Extrakt vermischen.",
+    "Das Kokosöl und den Pflanzendrink hinzufügen und alles zu einem glatten Teig vermischen.",
+    "Die Erdbeeren in den Teig geben und vorsichtig unterheben.",
+    "Den Teig in die vorbereitete Springform geben und glatt streichen.",
+    "Die Torte für etwa 35-40 Minuten backen, bis sie goldbraun ist.",
+    "Die Torte aus dem Ofen nehmen und abkühlen lassen.",
+    "Die Torte servieren und genießen!"
+  ],
+  "image": "http://localhost:8000/static/generated_662055420117815416.png",
+  "is_ai": true
+}

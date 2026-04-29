@@ -1,0 +1,29 @@
+{
+  "title": "Vegane Rhabarber-Torte",
+  "ingredients": [
+    "500g Rhabarber",
+    "200g Zucker",
+    "100g Mehl",
+    "50g Haferflocken",
+    "1/2 TL Salz",
+    "1/2 TL Backpulver",
+    "1/4 TL Zimt",
+    "1/4 TL Nelken",
+    "100ml Pflanzenmilch",
+    "50g Pflanzenschmalz",
+    "1 EL Apfelessig",
+    "1 TL Vanille-Extrakt"
+  ],
+  "zubereitung": [
+    "Den Backofen auf 180°C vorheizen.",
+    "Den Rhabarber waschen, schälen und in kleine Stücke schneiden.",
+    "In einer Schüssel Mehl, Haferflocken, Zucker, Salz, Backpulver, Zimt und Nelken vermischen.",
+    "In einer separaten Schüssel Pflanzenmilch, Pflanzenschmalz, Apfelessig und Vanille-Extrakt vermischen.",
+    "Die feuchten Zutaten zu den trockenen Zutaten geben und gut vermischen.",
+    "Den Rhabarber hinzufügen und vorsichtig unterheben.",
+    "Die Mischung in eine gefettete Torte-Form geben und 40-45 Minuten backen.",
+    "Die Torte aus dem Ofen nehmen und 10 Minuten abkühlen lassen, bevor sie serviert wird."
+  ],
+  "image": "http://localhost:8000/static/generated_5186091872622446462.png",
+  "is_ai": true
+}
