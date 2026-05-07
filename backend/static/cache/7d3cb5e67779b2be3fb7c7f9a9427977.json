@@ -1,0 +1,26 @@
+{
+  "title": "Vegane Bananen-Pfannkuchen",
+  "ingredients": [
+    "3 reife Bananen",
+    "1/2 Tasse Haferflocken",
+    "1/4 Tasse Mandelmehl",
+    "1/4 Tasse Kokoszucker",
+    "1/2 Teelöffel Backpulver",
+    "1/4 Teelöffel Salz",
+    "1/4 Tasse Pflanzenmilch (z.B. Mandelmilch oder Sojamilch)",
+    "1 EL Kokosöl",
+    "1 TL Vanille-Extrakt"
+  ],
+  "zubereitung": [
+    "Die Bananen schälen und in einer Schüssel zerdrücken.",
+    "In einer separaten Schüssel die Haferflocken, Mandelmehl, Kokoszucker, Backpulver und Salz vermischen.",
+    "Die trockenen Zutaten zu den zerdrückten Bananen hinzufügen und gut vermischen.",
+    "Die Pflanzenmilch, das Kokosöl und den Vanille-Extrakt hinzufügen und alles zu einem glatten Teig vermischen.",
+    "Eine Pfanne mit etwas Kokosöl erhitzen und kleine Portionen des Teigs hineingeben.",
+    "Die Pfannkuchen bei mittlerer Hitze backen, bis sie goldbraun sind und sich leicht vom Pfannenboden lösen.",
+    "Die Pfannkuchen wenden und auf der anderen Seite backen, bis sie ebenfalls goldbraun sind.",
+    "Die Pfannkuchen warm servieren und nach Belieben mit Früchten, Nüssen oder Ahornsirup toppen."
+  ],
+  "image": "http://localhost:8000/static/generated_4480987135366016608.png",
+  "is_ai": true
+}

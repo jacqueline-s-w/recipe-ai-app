@@ -35,6 +35,20 @@ def get_cache_key(ingredients: list[str]) -> str:
 # Bildgenerierung über OpenAI (günstig & optimiert)
 # -------------------------------------------------------------------
 def generate_image_from_prompt(prompt: str) -> str:
+    # Hash für Caching
+    image_key = hashlib.md5(prompt.encode()).hexdigest()
+    filename = f"{image_key}.png"
+    filepath = f"static/images/{filename}"
+
+    # Ordner sicherstellen
+    os.makedirs("static/images", exist_ok=True)
+
+    # 1) Prüfen, ob Bild bereits existiert → Caching
+    if os.path.exists(filepath):
+        print("IMAGE CACHE HIT – kein neuer OpenAI-Call")
+        return f"http://localhost:8000/static/images/{filename}"
+
+    # 2) Wenn nicht im Cache → OpenAI aufrufen
     url = "https://api.openai.com/v1/images/generations"
 
     headers = {
@@ -45,7 +59,7 @@ def generate_image_from_prompt(prompt: str) -> str:
     payload = {
         "model": "gpt-image-1.5",
         "prompt": prompt,
-        "size": "1024x1024"   # HALBIERT die Kosten!
+        "size": "1024x1024"
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -68,13 +82,12 @@ def generate_image_from_prompt(prompt: str) -> str:
 
     image_bytes = base64.b64decode(b64_data)
 
-    filename = f"generated_{abs(hash(prompt))}.png"
-    filepath = f"static/{filename}"
-
+    # 3) Bild speichern (für zukünftige Anfragen)
     with open(filepath, "wb") as f:
         f.write(image_bytes)
 
-    return f"http://localhost:8000/static/{filename}"
+    return f"http://localhost:8000/static/images/{filename}"
+
 
 
 # -------------------------------------------------------------------
