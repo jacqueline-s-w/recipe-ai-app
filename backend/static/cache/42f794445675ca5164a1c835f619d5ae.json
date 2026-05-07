@@ -1,0 +1,19 @@
+{
+  "title": "Johannisbeeren-Sorbet",
+  "ingredients": [
+    "200g Johannisbeeren",
+    "100g Ahornsirup",
+    "100ml Pflanzenmilch",
+    "1 EL Zitronensaft"
+  ],
+  "zubereitung": [
+    "Die Johannisbeeren waschen und von den Stielen befreien.",
+    "Die Johannisbeeren mit dem Ahornsirup, der Pflanzenmilch und dem Zitronensaft in einem Mixer pürieren.",
+    "Das Püree durch ein Sieb geben, um die Kerne zu entfernen.",
+    "Das Sorbet in eine Schüssel geben und im Gefrierschrank für mindestens 2 Stunden gefrieren lassen.",
+    "Das Sorbet alle 30 Minuten umrühren, um eine gleichmäßige Konsistenz zu erzielen.",
+    "Das Sorbet servieren und genießen!"
+  ],
+  "image": "http://localhost:8000/static/images/3fca2ca671d452422d21e975847112c7.png",
+  "is_ai": true
+}

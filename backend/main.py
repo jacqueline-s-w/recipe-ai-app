@@ -32,3 +32,28 @@ def root():
 @app.get("/favicon.ico")
 async def favicon():
  return Response(status_code=204)
+
+@app.post("/api/regenerate-image")
+async def regenerate_image(data: dict):
+    title = data.get("title")
+    ingredients = data.get("ingredients", [])
+
+    if not title:
+        return {"error": "Missing title"}
+
+    ingredients_text = ", ".join(ingredients)
+
+    # Bildprompt wie in ai_service.py
+    image_prompt = (
+        f"Professionelles Food-Foto von einem veganen Gericht: {title}. "
+        f"Hauptzutaten: {ingredients_text}. "
+        f"Stil: hochwertige Food Photography, helles natürliches Tageslicht, "
+        f"realistisch, 50mm Linse, leichte Tiefenschärfe, serviert auf einem Teller, "
+        f"sauberer Hintergrund, von leicht schräg oben fotografiert."
+    )
+
+    from services.ai_service import generate_image_from_prompt
+
+    image_url = generate_image_from_prompt(image_prompt)
+
+    return {"image": image_url}

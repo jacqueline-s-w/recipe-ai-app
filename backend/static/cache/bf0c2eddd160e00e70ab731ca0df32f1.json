@@ -1,0 +1,20 @@
+{
+  "title": "Erdbeer-Linsen-Salat",
+  "ingredients": [
+    "200g Linsen",
+    "250g Erdbeeren",
+    "2 EL Olivenöl",
+    "1 EL Apfelessig",
+    "1 TL Honig",
+    "Salz und Pfeffer nach Geschmack"
+  ],
+  "zubereitung": [
+    "Die Linsen in einem Topf mit Wasser bedecken und etwa 20-25 Minuten kochen, bis sie weich sind.",
+    "Inzwischen die Erdbeeren waschen, putzen und in kleine Stücke schneiden.",
+    "In einer großen Schüssel die gekochten Linsen mit den Erdbeeren vermischen.",
+    "In einer separaten Schüssel das Olivenöl, den Apfelessig und den Honig vermischen und über den Linsen-Erdbeer-Mix geben.",
+    "Mit Salz und Pfeffer nach Geschmack abschmecken und servieren."
+  ],
+  "image": "http://localhost:8000/static/images/9f8d7ef806233f35006a83a7d9148ed5.png",
+  "is_ai": true
+}

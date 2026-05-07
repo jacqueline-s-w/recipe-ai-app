@@ -108,13 +108,15 @@ def generate_recipe_with_ai(ingredients: list[str]) -> dict:
     system_prompt = "Gib ausschließlich gültiges JSON zurück."
 
     user_prompt = f"""
-Erstelle ein veganes Rezept aus: {ingredients_text}
+Erstelle ein kreatives, aber alltagstaugliches veganes Rezept auf Deutsch aus folgenden Zutaten:
+{ingredients_text}
 
-Format:
+Gib ausschließlich folgendes JSON zurück:
+
 {{
-  "title": "",
-  "ingredients": [],
-  "zubereitung": []
+  "title": "kurzer Rezepttitel",
+  "ingredients": ["Zutat mit Menge und Einheit", "..."],
+  "zubereitung": ["Schritt-für-Schritt-Anleitung", "..."]
 }}
 """
 
@@ -135,10 +137,18 @@ Format:
 
         data = json.loads(content)
 
-        # AUTOMATISCHER Bildprompt → spart Tokens
-        image_prompt = f"Professionelles Food-Foto von {data['title']}, helles Tageslicht, realistisch, 50mm"
+        ingredients_text = ", ".join(data["ingredients"])
+
+        image_prompt = (
+            f"Professionelles Food-Foto von einem veganen Gericht: {data['title']}. "
+            f"Hauptzutaten: {ingredients_text}. "
+            f"Stil: hochwertige Food Photography, helles natürliches Tageslicht, "
+            f"realistisch, 50mm Linse, leichte Tiefenschärfe, serviert auf einem Teller, "
+            f"sauberer Hintergrund, von leicht schräg oben fotografiert."
+        )
 
         image_url = generate_image_from_prompt(image_prompt)
+
 
         result = {
             "title": data["title"],

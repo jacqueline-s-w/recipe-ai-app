@@ -1,0 +1,24 @@
+{
+  "title": "Linseneintopf mit Gemüse",
+  "ingredients": [
+    "250g Linsen",
+    "1 Zwiebel",
+    "2 Knoblauchzehen",
+    "2 Karotten",
+    "1 Sellerie",
+    "1 Dose Tomaten (400g)",
+    "1 Liter Gemüsebrühe",
+    "1 EL Olivenöl",
+    "Salz und Pfeffer nach Geschmack"
+  ],
+  "zubereitung": [
+    "Die Linsen über Nacht in Wasser einweichen und dann abgießen.",
+    "Das Olivenöl in einem großen Topf erhitzen und die fein gehackte Zwiebel und den Knoblauch darin anschwitzen.",
+    "Die Karotten und den Sellerie in kleine Stücke schneiden und hinzufügen. Für einige Minuten mitbraten.",
+    "Die abgegossenen Linsen, die Tomaten und die Gemüsebrühe hinzufügen. Alles gut vermischen.",
+    "Den Eintopf bei mittlerer Hitze für etwa 30-40 Minuten köcheln lassen, bis die Linsen weich sind.",
+    "Mit Salz und Pfeffer abschmecken und servieren."
+  ],
+  "image": "http://localhost:8000/static/images/f2a9c0f845f3f1cb6ab5e8e07ba6dcec.png",
+  "is_ai": true
+}

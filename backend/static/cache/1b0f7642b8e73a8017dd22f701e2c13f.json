@@ -1,0 +1,25 @@
+{
+  "title": "Limetten-Torte",
+  "ingredients": [
+    "200g Mehl",
+    "100g Zucker",
+    "100g veganer Butterersatz",
+    "2 Limetten (Saft und Schale)",
+    "1 Päckchen Backpulver",
+    "1/2 Teelöffel Salz",
+    "1/2 Liter Pflanzmilch",
+    "1 Esslöffel Apfelessig"
+  ],
+  "zubereitung": [
+    "Den Backofen auf 180 Grad vorheizen und eine Springform mit Backpapier auslegen.",
+    "In einer Schüssel Mehl, Zucker, Backpulver und Salz vermischen.",
+    "In einer separaten Schüssel den Limettensaft, die Pflanzmilch und den Apfelessig vermischen.",
+    "Die veganen Butterersatz hinzufügen und alles zu einer glatten Masse vermischen.",
+    "Die Limettenschale und die trockenen Zutaten hinzufügen und alles gut vermischen.",
+    "Die Masse in die vorbereitete Springform geben und 35-40 Minuten backen.",
+    "Die Torte aus dem Ofen nehmen und auf einem Kuchengitter abkühlen lassen.",
+    "Nach dem Abkühlen die Torte mit einer Limetten-Glasur (aus Limettensaft und Puderzucker) überziehen und servieren."
+  ],
+  "image": "http://localhost:8000/static/images/c1941c3f3c8f49f18c2c7f1ddb500092.png",
+  "is_ai": true
+}
