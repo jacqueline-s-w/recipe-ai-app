@@ -1,0 +1,21 @@
+{
+  "title": "Haselnuss-Pesto-Pasta",
+  "ingredients": [
+    "200g Pasta",
+    "100g Haselnüsse",
+    "200g frische Basilikumblätter",
+    "2 EL Olivenöl",
+    "2 EL Zitronensaft",
+    "1 TL Salz",
+    "1/2 TL schwarzer Pfeffer",
+    "100g veganer Parmesan (z.B. aus Nüssen oder Soja)"
+  ],
+  "zubereitung": [
+    "Die Pasta nach Packungsanweisung kochen und abgießen.",
+    "In einer Küchenmaschine die Haselnüsse, Basilikumblätter, Olivenöl, Zitronensaft, Salz und Pfeffer zu einem cremigen Pesto verarbeiten.",
+    "Die gekochte Pasta mit dem Pesto vermischen und mit veganem Parmesan bestreuen.",
+    "Die Pasta sofort servieren und genießen."
+  ],
+  "image": "http://localhost:8000/static/images/02159bda491f89882de00ab3c736135f.png",
+  "is_ai": true
+}

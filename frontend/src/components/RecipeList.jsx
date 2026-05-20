@@ -21,6 +21,8 @@ export default function RecipeList({ recipes, loading }) {
                   recipe={item.recipe}
                   matchPercent={item.match_percent}
                   missingIngredients={item.missing_ingredients}
+                  allergens={item.allergens}
+                  alternatives={item.alternatives}
                 />
               </li>
             ))}

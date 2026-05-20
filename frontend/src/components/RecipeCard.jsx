@@ -4,6 +4,8 @@ export default function RecipeCard({
   recipe,
   matchPercent,
   missingIngredients,
+  allergens = [],
+  alternatives = {},
 }) {
   // ⭐ STATES MÜSSEN HIER REIN — direkt in die Komponente
   const [imageUrl, setImageUrl] = useState(recipe.image);
@@ -91,6 +93,24 @@ export default function RecipeCard({
           <li key={ing}>{ing}</li>
         ))}
       </ul>
+
+      {allergens.lentgh > 0 && (
+        <div className="mt-4 p-3 bg-red-100 border-red-500 rounded">
+          <h4 className="font-bold text-red-700 mb-1">⚠️ Allergene</h4>
+          <ul className="list-disc list-inside text-red-700">
+            {allergens.map((a) => (
+              <li key={a}>
+                <span className="font-semibold">{a}</span>
+                {alternatives[a] && alternatives[a].length > 0 && (
+                  <span className="text-gray-700 ml-2">
+                    → Alternativen: {alternatives[a].join(', ')}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {missingIngredients?.length > 0 && (
         <div className="mt-2 text-sm text-red-500">

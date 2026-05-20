@@ -1,0 +1,20 @@
+{
+  "title": "Stachelbeeren-Kompott mit Haferflocken",
+  "ingredients": [
+    "200g Stachelbeeren",
+    "100g Haferflocken",
+    "200ml Pflanzenmilch (z.B. Mandelmilch oder Sojamilch)",
+    "2 EL Ahornsirup",
+    "1 TL Vanille-Extrakt",
+    "1/2 TL Zimt"
+  ],
+  "zubereitung": [
+    "Die Stachelbeeren waschen und von den Stielen befreien.",
+    "In einem Topf die Pflanzenmilch, den Ahornsirup, den Vanille-Extrakt und den Zimt vermischen und unter Rühren aufkochen lassen.",
+    "Die Haferflocken hinzufügen und unter ständigem Rühren etwa 5 Minuten köcheln lassen, bis die Mischung dick und cremig wird.",
+    "Die Stachelbeeren hinzufügen und weitere 2-3 Minuten köcheln lassen, bis sie weich sind.",
+    "Das Kompott in Schalen füllen und warm oder kalt servieren."
+  ],
+  "image": "http://localhost:8000/static/images/d693192616f61fcf63f0eab7393d87ce.png",
+  "is_ai": true
+}
