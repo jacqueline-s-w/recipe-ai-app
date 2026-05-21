@@ -11,6 +11,8 @@ router= APIRouter()
 
 class IngredientsRequest(BaseModel):
     ingredients:list[str]
+    exclude_ingredients: list[str]= []
+    intolerances: list[str] = []
 
 
 
@@ -36,7 +38,7 @@ def get_recipes(request:IngredientsRequest):
         )
     
     # Service aufrufen
-     matching_recipes = get_recipes_with_fallback(cleaned_ingredients, recipes)
+     matching_recipes = get_recipes_with_fallback(cleaned_ingredients, recipes, exclude_ingredients=request.exclude_ingredients, intolerances= request.intolerances)
      print(matching_recipes)
      return {"recipes":matching_recipes}
 

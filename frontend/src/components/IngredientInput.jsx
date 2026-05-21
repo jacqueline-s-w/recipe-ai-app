@@ -6,6 +6,8 @@ export default function IngredientInput({
   onFindRecipes,
 }) {
   const [input, setInput] = useState('');
+  const [excludeIngredients, setExcludeIngredients] = useState('');
+  const [intolerances, setIntolerances] = useState([]);
 
   // Mehrere Zutaten mit Komma getrennt hinzufügen
   async function addIngredient(e) {
@@ -35,6 +37,40 @@ export default function IngredientInput({
           className="border p-2 rounded w-full"
           placeholder="z.B. Tomate, Käse, Basilikum"
         />
+        <div className="mt-4">
+          <label className="block font-semibold mb-1">
+            Zutaten ausschließen
+          </label>
+          <input
+            type="text"
+            placeholder="z.B. Zwiebel, Knoblauch, Zucker"
+            value={excludeIngredients}
+            onChange={(e) => setExcludeIngredients(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <div className="mt-4">
+          <label className="block font-semibold mb-1">
+            Unverträglichkeiten
+          </label>
+          <select
+            multiple
+            value={intolerances}
+            onChange={(e) =>
+              setIntolerances(
+                Array.from(e.target.selectedOptions, (opt) => opt.value),
+              )
+            }
+            className="w-full p-2 border rounded h-32">
+            <option value="gluten">Gluten</option>
+            <option value="laktose">Laktose</option>
+            <option value="histamin">Histamin</option>
+            <option value="fruktose">Fruktose</option>
+            <option value="soja">Soja</option>
+            <option value="tierisches_eiweiss">Tierisches Eiweiß</option>
+            <option value="nuesse">Nüsse</option>
+          </select>
+        </div>
 
         <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
           Hinzufügen
@@ -50,7 +86,16 @@ export default function IngredientInput({
 
       <button
         type="button"
-        onClick={onFindRecipes}
+        onClick={() =>
+          onFindRecipes(
+            ingredients,
+            excludeIngredients
+              .split(',')
+              .map((i) => i.trim())
+              .filter(Boolean),
+            intolerances,
+          )
+        }
         className="mt-6 bg-green-600 text-white px-4 py-2 rounded w-full">
         Rezepte finden
       </button>

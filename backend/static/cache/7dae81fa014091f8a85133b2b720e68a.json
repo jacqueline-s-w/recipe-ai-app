@@ -1,0 +1,20 @@
+{
+  "title": "Vegane Zucchini-Spaghetti",
+  "ingredients": [
+    "250g Spaghetti",
+    "2 mittelgroße Zucchinis",
+    "2 EL Olivenöl",
+    "1 TL getrockneter Basilikum",
+    "1 TL getrockneter Oregano",
+    "Salz und Pfeffer nach Geschmack"
+  ],
+  "zubereitung": [
+    "Die Spaghetti in einem großen Topf mit kochendem Salzwasser nach Packungsanweisung al dente kochen.",
+    "Inzwischen die Zucchinis in dünne Scheiben schneiden und in einer Pfanne mit Olivenöl anbraten, bis sie leicht goldbraun sind.",
+    "Die Zucchinis mit Basilikum, Oregano, Salz und Pfeffer würzen und weitere 2-3 Minuten braten.",
+    "Die gekochten Spaghetti abgießen und mit den gebratenen Zucchinis vermischen.",
+    "Das Gericht sofort servieren und genießen!"
+  ],
+  "image": "http://localhost:8000/static/images/4a7c3923323419b9e3c3f6b87db41fe1.png",
+  "is_ai": true
+}

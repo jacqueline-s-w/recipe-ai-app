@@ -61,6 +61,31 @@ ALLERGEN_ALTERNATIVES = {
     "fisch": ["tofu", "jackfruit"],
 }
 
+INTOLERANCE_MAP = {
+    "histamin": [
+        "tomate", "tomaten", "spinat", "avocado", "aubergine",
+        "kichererbse", "sojasauce", "essig", "wein"
+    ],
+    "fruktose": [
+        "apfel", "birne", "honig", "fruchtsaft", "traube", "mango"
+    ],
+    "laktose": [
+        "milch", "sahne", "rahm", "käse", "butter", "joghurt"
+    ],
+    "gluten": [
+        "weizen", "mehl", "nudel", "pasta", "brot", "spaghetti"
+    ],
+    "tierisches_eiweiss": [
+        "ei", "milch", "käse", "joghurt", "fisch", "fleisch"
+    ],
+    "soja": [
+        "soja", "tofu", "sojasauce"
+    ],
+    "nuesse": [
+        "nuss", "nüsse", "haselnuss", "walnuss", "cashew", "erdnuss"
+    ]
+}
+
 
 # def expand_synonyms(token):
 #      for key, group in SYNONYMS.items():
@@ -160,7 +185,7 @@ def detect_allergens(recipe_ingredients):
                               if fuzzy_match(token, w):
                                    found_allergens.add(allergen)
                                    break
-          return list(found_allergens)       
+     return list(found_allergens)       
 
 
 # Allergen Alternativen
@@ -209,15 +234,43 @@ def fuzzy_match(a,b):
      return ratio >= 0.8
      
 
-def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
-     
+#__________________________________________________________________
+
+# Ausschließen von Rezepten,wenn unerwünschte Zutaten enthalten sind bei einer Schnittmenge >0...
+def recipe_contains_excluded(recipe, exclude_tokens):
+     recipe_tokens= process_ingredients(recipe["ingredients"])
+     return bool(recipe_tokens & exclude_tokens)
+#_________________________________________________________________
+#Intoleranz-Check
+def violates_intolerance(recipe, intolerances):
+     recipe_tokens= process_ingredients(recipe["ingredients"])
+     for intolerance in intolerances:
+          forbidden= INTOLERANCE_MAP.get(intolerance, [])
+          forbidden= {normalize_token(f) for f in forbidden}
+          if recipe_tokens & forbidden:
+               return True
+     return False
+
+#_______________________________________________________________
+# Passende Rezepte finden
+def find_matching_recipes(user_ingredients: list[str], recipes:list[dict], exclude_ingredients=None, intolerances=None):
+     exclude_ingredients= exclude_ingredients or []
+     intolerances= intolerances or []
      result=[]
      
 
      #EINMAL: User-Zutaten normalisieren 
      user_tokens=process_ingredients(user_ingredients) 
 
+     exclude_tokens= process_ingredients(exclude_ingredients)
+
      for recipe in recipes:
+          #HARD EXCLUDE
+          if recipe_contains_excluded(recipe, exclude_tokens):
+               continue
+          # Intoleranz-Filter
+          if violates_intolerance(recipe, intolerances):
+               continue
           #PRO REZEPT
           # recipe_tokens=process_ingredients(recipe["ingredients"])
           
@@ -309,12 +362,35 @@ def find_matching_recipes(user_ingredients: list[str], recipes:list[dict]):
      return result
 
 #  get_recipes_with_fallback
-def get_recipes_with_fallback(user_ingredients, recipes):
-     matches= find_matching_recipes(user_ingredients, recipes)
-     
-     if matches:
-          return matches
-     
-     ai_recipe = generate_recipe_with_ai(user_ingredients)
+def get_recipes_with_fallback(user_ingredients, recipes, exclude_ingredients=None, intolerances=None):
+    exclude_ingredients = exclude_ingredients or []
+    intolerances = intolerances or []
 
-     return  [{"match_percent":0.0, "recipe": ai_recipe}]
+    matches = find_matching_recipes(
+        user_ingredients,
+        recipes,
+        exclude_ingredients=exclude_ingredients,
+        intolerances=intolerances
+    )
+
+    if matches:
+        return matches
+
+    # KI-Rezept generieren
+    ai_recipe = generate_recipe_with_ai(user_ingredients)
+
+    # Intoleranz-Check für KI-Rezept
+    if violates_intolerance(ai_recipe, intolerances):
+        return []
+
+    # Allergene für KI-Rezept berechnen
+    allergens = detect_allergens(ai_recipe["ingredients"])
+    alternatives = get_allergen_alternatives(allergens)
+
+    return [{
+        "match_percent": 0.0,
+        "recipe": ai_recipe,
+        "allergens": allergens,
+        "alternatives": alternatives
+    }]
+
