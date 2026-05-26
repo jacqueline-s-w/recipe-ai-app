@@ -2,6 +2,12 @@ import RecipeCard from './RecipeCard';
 import RecipeSkeleton from './RecipeSkeleton';
 
 export default function RecipeList({ recipes, loading }) {
+  if (!loading && recipes.length === 0) {
+    return (
+      <p className="text-gray-600 mt-6 text-center">Keine Rezepte gefunden.</p>
+    );
+  }
+
   return (
     <section className="mt-8 max-w-xl mx-auto">
       {loading && (

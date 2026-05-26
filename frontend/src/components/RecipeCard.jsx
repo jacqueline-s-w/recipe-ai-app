@@ -7,10 +7,11 @@ export default function RecipeCard({
   allergens = [],
   alternatives = {},
 }) {
-  // ⭐ STATES MÜSSEN HIER REIN — direkt in die Komponente
   const [imageUrl, setImageUrl] = useState(recipe.image);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+
+  const btn = 'px-4 py-2 rounded font-medium transition-colors';
 
   function getMatchColor(percent) {
     if (percent >= 70) return 'bg-green-500';
@@ -20,7 +21,6 @@ export default function RecipeCard({
 
   const steps = recipe.zubereitung || recipe.steps || [];
 
-  // ⭐ Handler für „Bild neu generieren“
   async function handleRegenerateImage() {
     setRegenerating(true);
     setImageLoaded(false);
@@ -56,7 +56,7 @@ export default function RecipeCard({
         </div>
       )}
 
-      {/* ⭐ Bild mit Skeleton Loader */}
+      {/* Bild + Skeleton */}
       <div className="relative w-full h-48 mb-3">
         {!imageLoaded && (
           <div className="absolute inset-0 bg-gray-300 animate-pulse rounded-md"></div>
@@ -73,12 +73,12 @@ export default function RecipeCard({
         />
       </div>
 
-      {/* ⭐ Button: Bild neu generieren */}
+      {/* Bild neu generieren */}
       <button
         onClick={handleRegenerateImage}
         disabled={regenerating}
-        className={`mt-2 px-3 py-1 rounded text-sm text-white ${
-          regenerating ? 'bg-gray-400' : 'bg-blue-600'
+        className={`mt-2 px-4 py-2 rounded font-medium text-white transition-colors ${
+          regenerating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
         }`}>
         {regenerating ? 'Generiere...' : 'Bild neu generieren'}
       </button>
@@ -87,15 +87,16 @@ export default function RecipeCard({
 
       <p className="text-sm text-gray-600">⏱ {recipe.time} Minuten</p>
 
-      <h4 className="mt-2 font font-bold">Zutaten:</h4>
+      <h4 className="mt-2 font-bold">Zutaten:</h4>
       <ul className="list-disc list-inside mt-2">
         {recipe.ingredients?.map((ing) => (
           <li key={ing}>{ing}</li>
         ))}
       </ul>
 
-      {allergens.lentgh > 0 && (
-        <div className="mt-4 p-3 bg-red-100 border-red-500 rounded">
+      {/* ⭐ Allergene */}
+      {allergens.length > 0 && (
+        <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 rounded">
           <h4 className="font-bold text-red-700 mb-1">⚠️ Allergene</h4>
           <ul className="list-disc list-inside text-red-700">
             {allergens.map((a) => (
@@ -112,22 +113,24 @@ export default function RecipeCard({
         </div>
       )}
 
+      {/* Fehlende Zutaten */}
       {missingIngredients?.length > 0 && (
         <div className="mt-2 text-sm text-red-500">
           Fehlt: {missingIngredients.join(', ')}
         </div>
       )}
 
+      {/* Zubereitung */}
       {steps.length > 0 && (
         <>
           <h4 className="mt-4 font-bold">Zubereitung:</h4>
-          <ul className="list-decimal list-inside mt-2 space-y-4">
+          <ol className="list-decimal list-inside mt-2 space-y-2">
             {steps.map((zub, index) => (
-              <li className="marker:font-bold" key={index}>
+              <li className="leading-relaxed" key={index}>
                 {zub}
               </li>
             ))}
-          </ul>
+          </ol>
         </>
       )}
     </article>

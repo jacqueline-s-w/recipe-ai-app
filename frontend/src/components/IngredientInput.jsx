@@ -4,11 +4,13 @@ export default function IngredientInput({
   ingredients,
   setIngredients,
   onFindRecipes,
+  loading,
 }) {
   const [input, setInput] = useState('');
   const [excludeIngredients, setExcludeIngredients] = useState('');
   const [intolerances, setIntolerances] = useState([]);
 
+  const btn = 'px-4 py-2 rounded font-medium transition-colors';
   // Mehrere Zutaten mit Komma getrennt hinzufügen
   async function addIngredient(e) {
     e.preventDefault();
@@ -96,8 +98,9 @@ export default function IngredientInput({
             intolerances,
           )
         }
-        className="mt-6 bg-green-600 text-white px-4 py-2 rounded w-full">
-        Rezepte finden
+        disabled={loading}
+        className={`w-full ${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded font-medium transition-colors`}>
+        {loading ? 'Suche...' : 'Rezepte finden'}
       </button>
     </section>
   );

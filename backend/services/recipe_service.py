@@ -1,15 +1,13 @@
 from services.ai_service import generate_recipe_with_ai
 
 import re
-import unicodedata
-
 from difflib import SequenceMatcher
 
 STOP_INGREDIENTS = {
     "salz",
     "pfeffer",
     "öl",
-    "wasser"
+    "wasser",
 }
 
 STOPWORDS = {
@@ -42,7 +40,6 @@ ALLERGENS = {
     "gluten": ["weizen", "mehl", "brot", "nudel", "pasta", "spaghetti", "penne"],
     "laktose": ["milch", "sahne", "rahm", "käse", "butter", "joghurt"],
     "nüsse": ["mandel", "haselnuss", "haselnuesse", "haselnüsse", "walnuss", "cashew", "erdnuss"],
-
     "soja": ["soja", "sojasauce", "tofu"],
     "sellerie": ["sellerie", "stangensellerie"],
     "sesam": ["sesam", "sesamsamen"],
@@ -64,65 +61,52 @@ ALLERGEN_ALTERNATIVES = {
 INTOLERANCE_MAP = {
     "histamin": [
         "tomate", "tomaten", "spinat", "avocado", "aubergine",
-        "kichererbse", "sojasauce", "essig", "wein"
+        "kichererbse", "sojasauce", "essig", "wein",
     ],
     "fruktose": [
-        "apfel", "birne", "honig", "fruchtsaft", "traube", "mango"
+        "apfel", "birne", "honig", "fruchtsaft", "traube", "mango",
     ],
     "laktose": [
-        "milch", "sahne", "rahm", "käse", "butter", "joghurt"
+        "milch", "sahne", "rahm", "käse", "butter", "joghurt",
     ],
     "gluten": [
-        "weizen", "mehl", "nudel", "pasta", "brot", "spaghetti"
+        "weizen", "mehl", "nudel", "pasta", "brot", "spaghetti",
     ],
     "tierisches_eiweiss": [
-        "ei", "milch", "käse", "joghurt", "fisch", "fleisch"
+        "ei", "milch", "käse", "joghurt", "fisch", "fleisch",
     ],
     "soja": [
-        "soja", "tofu", "sojasauce"
+        "soja", "tofu", "sojasauce",
     ],
     "nuesse": [
-        "nuss", "nüsse", "haselnuss", "walnuss", "cashew", "erdnuss"
-    ]
+        "nuss", "nüsse", "haselnuss", "walnuss", "cashew", "erdnuss",
+    ],
 }
 
 
-# def expand_synonyms(token):
-#      for key, group in SYNONYMS.items():
-#           if token in group:
-#                return group
-#           return {token}
+def expand_synonyms(token: str) -> set:
+    expanded = {token}
+    for key, values in SYNONYMS.items():
+        if token == key:
+            expanded.update(values)
+            continue
+        if token in values:
+            expanded.add(key)
+            expanded.update(values)
+    return expanded
 
- 
-# erweiterte Synonyme
-def expand_synonyms(token:str)-> set:
-     expanded ={token}
-     for key, values in SYNONYMS.items():
-          # Wenn token der Hauptbegriff ist
-          if token == key:
-               expanded.update(values)
-               continue
-          # Wenn token in der Value-liste vorkommt
-          if token in values:
-               expanded.add(key)
-               expanded.update(values)
-     return expanded
 
-# Zutaten klein, ohne LZ,...
-def tokenize_ingredient(text):
-      text= text.lower().strip()
-      return re.findall(r"\b\w+\b", text)
-       
-# Zutaten Verarbeitung       
-def process_ingredients(ingredients):
+def tokenize_ingredient(text: str) -> list[str]:
+    text = text.lower().strip()
+    return re.findall(r"\b\w+\b", text)
+
+
+def process_ingredients(ingredients: list[str]) -> set[str]:
     tokens = set()
-
     for ingredient in ingredients:
         word_tokens = tokenize_ingredient(ingredient)
-
         for token in word_tokens:
             token = normalize_token(token)
-
             if (
                 token not in STOP_INGREDIENTS
                 and token not in STOPWORDS
@@ -130,30 +114,11 @@ def process_ingredients(ingredients):
                 and len(token) > 2
             ):
                 tokens.add(token)
-
     return tokens
-          
 
 
-# normalize_word
-# def normalize(word):
-#     word = word.lower().strip()
-
-#     # einfache Plural-Singular-Regeln
-#     if word.endswith("en"):
-#         word = word[:-2]
-#     elif word.endswith("n"):
-#         word = word[:-1]
-#     elif word.endswith("e"):
-#         word = word[:-1]
-#     elif word.endswith("s"):
-#         word = word[:-1]
-
-#     return word
-# Normalisieren klein, ohne Leerz, Umlaute, singular,..
 def normalize_token(token: str) -> str:
     token = token.lower().strip()
-
     token = token.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
 
     endings = ["en", "er", "n", "e", "s"]
@@ -165,35 +130,33 @@ def normalize_token(token: str) -> str:
     return token
 
 
-# Allergene_______________________________________________________________________________________________________ 
-def detect_allergens(recipe_ingredients):
-     found_allergens=set()
+def detect_allergens(recipe_ingredients: list[str]) -> list[str]:
+    found_allergens = set()
 
-     for ingredient in recipe_ingredients:
-          tokens= tokenize_ingredient(ingredient)
-          tokens= {normalize_token(t) for t in tokens}
+    for ingredient in recipe_ingredients:
+        tokens = tokenize_ingredient(ingredient)
+        tokens = {normalize_token(t) for t in tokens}
 
-          for allergen, words in ALLERGENS.items():
-               for token in tokens:
-                    # direkter Treffer
-                    if token in words:
-                         found_allergens.add(allergen)
-                         continue
-                    # fuzzy Treffer
-                    for w in words:
-                         if len(token) > 2 and len(w)>2:
-                              if fuzzy_match(token, w):
-                                   found_allergens.add(allergen)
-                                   break
-     return list(found_allergens)       
+        for allergen, words in ALLERGENS.items():
+            for token in tokens:
+                if token in words:
+                    found_allergens.add(allergen)
+                    continue
+                for w in words:
+                    if len(token) > 2 and len(w) > 2:
+                        if fuzzy_match(token, w):
+                            found_allergens.add(allergen)
+                            break
+
+    return list(found_allergens)
 
 
-# Allergen Alternativen
-def get_allergen_alternatives(allergens):
-     return {a: ALLERGEN_ALTERNATIVES.get(a, []) for a in allergens}         
-# Fehlende Zutaten_____________________________________________________
-def get_missing_ingredients(recipe_ingredients, user_tokens):
-    missing_clean = []
+def get_allergen_alternatives(allergens: list[str]) -> dict[str, list[str]]:
+    return {a: ALLERGEN_ALTERNATIVES.get(a, []) for a in allergens}
+
+
+def get_missing_ingredients(recipe_ingredients: list[str], user_tokens: set[str]) -> list[str]:
+    missing_clean: list[str] = []
 
     for ingredient in recipe_ingredients:
         ingredient_tokens = tokenize_ingredient(ingredient)
@@ -202,12 +165,10 @@ def get_missing_ingredients(recipe_ingredients, user_tokens):
         found = False
 
         for token in ingredient_tokens:
-            # Synonym-Matching
             if expand_synonyms(token) & user_tokens:
                 found = True
                 break
 
-            # Fuzzy Matching
             for ut in user_tokens:
                 if len(token) > 2 and len(ut) > 2:
                     if fuzzy_match(token, ut):
@@ -223,146 +184,114 @@ def get_missing_ingredients(recipe_ingredients, user_tokens):
     return missing_clean
 
 
-def fuzzy_match(a,b):
-     ratio = SequenceMatcher(None, a, b).ratio()
+def fuzzy_match(a: str, b: str) -> bool:
+    ratio = SequenceMatcher(None, a, b).ratio()
 
-     # kurze Wörter strenger behandeln
-     if len(a) <= 4 or len(b) >= 4:
-          return ratio >= 0.9
-     
-     # längere Wörter toleranter
-     return ratio >= 0.8
-     
+    # kurze Wörter strenger behandeln
+    if len(a) <= 4 or len(b) <= 4:
+        return ratio >= 0.9
 
-#__________________________________________________________________
-
-# Ausschließen von Rezepten,wenn unerwünschte Zutaten enthalten sind bei einer Schnittmenge >0...
-def recipe_contains_excluded(recipe, exclude_tokens):
-     recipe_tokens= process_ingredients(recipe["ingredients"])
-     return bool(recipe_tokens & exclude_tokens)
-#_________________________________________________________________
-#Intoleranz-Check
-def violates_intolerance(recipe, intolerances):
-     recipe_tokens= process_ingredients(recipe["ingredients"])
-     for intolerance in intolerances:
-          forbidden= INTOLERANCE_MAP.get(intolerance, [])
-          forbidden= {normalize_token(f) for f in forbidden}
-          if recipe_tokens & forbidden:
-               return True
-     return False
-
-#_______________________________________________________________
-# Passende Rezepte finden
-def find_matching_recipes(user_ingredients: list[str], recipes:list[dict], exclude_ingredients=None, intolerances=None):
-     exclude_ingredients= exclude_ingredients or []
-     intolerances= intolerances or []
-     result=[]
-     
-
-     #EINMAL: User-Zutaten normalisieren 
-     user_tokens=process_ingredients(user_ingredients) 
-
-     exclude_tokens= process_ingredients(exclude_ingredients)
-
-     for recipe in recipes:
-          #HARD EXCLUDE
-          if recipe_contains_excluded(recipe, exclude_tokens):
-               continue
-          # Intoleranz-Filter
-          if violates_intolerance(recipe, intolerances):
-               continue
-          #PRO REZEPT
-          # recipe_tokens=process_ingredients(recipe["ingredients"])
-          
-          recipe_tokens = process_ingredients(recipe["ingredients"])
+    # längere Wörter toleranter
+    return ratio >= 0.8
 
 
-          matches = set()
-          for ut in user_tokens:
-               user_group = expand_synonyms(ut)
-               u_norm = normalize_token(ut)
-
-               for rt in recipe_tokens:
-                    recipe_group = expand_synonyms(rt)
-                    r_norm = normalize_token(rt)
-
-                     # 1) Synonym-Matching
-                    if user_group & recipe_group:
-                         matches.add(rt)
-                         continue
-
-                    # 2) Fuzzy Matching (nur wenn sinnvoll)
-                    if len(u_norm) > 2 and len(r_norm) > 2:
-                         if fuzzy_match(u_norm, r_norm):
-                              matches.add(rt)
-                              continue
-
-                          
-            
-
-       
-        
-
-    
-   
+def recipe_contains_excluded(recipe: dict, exclude_tokens: set[str]) -> bool:
+    recipe_tokens = process_ingredients(recipe["ingredients"])
+    return bool(recipe_tokens & exclude_tokens)
 
 
+def violates_intolerance(recipe: dict, intolerances: list[str]) -> bool:
+    recipe_tokens = process_ingredients(recipe["ingredients"])
+    for intolerance in intolerances:
+        forbidden = INTOLERANCE_MAP.get(intolerance, [])
+        forbidden = {normalize_token(f) for f in forbidden}
+        if recipe_tokens & forbidden:
+            return True
+    return False
 
 
-        #   missing_tokens=recipe_tokens - user_tokens
-          missing_clean = get_missing_ingredients(recipe    ["ingredients"], user_tokens)
+def find_matching_recipes(
+    user_ingredients: list[str],
+    recipes: list[dict],
+    exclude_ingredients: list[str] | None = None,
+    intolerances: list[str] | None = None,
+) -> list[dict]:
+    exclude_ingredients = exclude_ingredients or []
+    intolerances = intolerances or []
+    result: list[dict] = []
+
+    user_tokens = process_ingredients(user_ingredients)
+    exclude_tokens = process_ingredients(exclude_ingredients)
+
+    for recipe in recipes:
+        if recipe_contains_excluded(recipe, exclude_tokens):
+            continue
+
+        if violates_intolerance(recipe, intolerances):
+            continue
+
+        recipe_tokens = process_ingredients(recipe["ingredients"])
+
+        matches: set[str] = set()
+        for ut in user_tokens:
+            user_group = expand_synonyms(ut)
+            u_norm = normalize_token(ut)
+
+            for rt in recipe_tokens:
+                recipe_group = expand_synonyms(rt)
+                r_norm = normalize_token(rt)
+
+                if user_group & recipe_group:
+                    matches.add(rt)
+                    continue
+
+                if len(u_norm) > 2 and len(r_norm) > 2:
+                    if fuzzy_match(u_norm, r_norm):
+                        matches.add(rt)
+                        continue
+
+        missing_clean = get_missing_ingredients(recipe["ingredients"], user_tokens)
+
+        score_user = len(matches) / len(user_tokens) if user_tokens else 0
+        score_recipe = len(matches) / len(recipe_tokens) if recipe_tokens else 0
+        score = (score_user * 0.6) + (score_recipe * 0.4)
+
+        if score_user >= 0.8:
+            score += 0.1
+
+        missing_ratio = len(missing_clean) / len(recipe_tokens) if recipe_tokens else 1
+        if missing_ratio > 0.5:
+            score *= 0.8
+
+        if len(matches) == 1 and len(user_tokens) >= 3:
+            score *= 0.7
+
+        percent = round(score * 100, 2)
+
+        allergens = detect_allergens(recipe["ingredients"])
+        alternatives = get_allergen_alternatives(allergens)
+
+        if percent >= 30:
+            result.append(
+                {
+                    "match_percent": percent,
+                    "missing_ingredients": missing_clean,
+                    "allergens": allergens,
+                    "alternatives": alternatives,
+                    "recipe": recipe,
+                }
+            )
+
+    result.sort(key=lambda x: x["match_percent"], reverse=True)
+    return result
 
 
-          # missing_list=sorted(missing_tokens)
-          #Schutz gegen Division durch 0
-          # if len(user_tokens)== 0 or len(recipe_tokens)==0:
-          #      continue
-          score_user = len(matches) / len(user_tokens) if user_tokens else 0
-          # score = calculate_match_score(user_ingredients, recipe["ingredients"])
-          score_recipe = len(matches) / len(recipe_tokens) if recipe_tokens else 0
-          # percent= calculate_match_percent(score, len(user_ingredients))
-          score = (score_user * 0.6) + (score_recipe * 0.4)
-
-          # Bonus für hohe Trefferquote
-          if score_user >= 0.8:
-               score += 0.1
-
-          # Penalty für viele fehlende Zutateten
-          missing_ratio = len(missing_clean)/ len(recipe_tokens) if recipe_tokens else 1
-          if missing_ratio > 0.5:
-               score *= 0.8
-
-          # Penalty für nur 1 Treffer bei vielen User-Zutaten
-          if len(matches)== 1 and len(user_tokens) >= 3:
-               score *= 0.7
-
-          percent = round(score * 100, 2)
-
-          # Allergene berechnen
-          allergens = detect_allergens(recipe["ingredients"])
-          alternatives = get_allergen_alternatives(allergens)
-
-          # Debug-Ausgaben (jetzt korrekt innerhalb der Schleife)
-          print("USER:", user_tokens)
-          print("RECIPE:", recipe_tokens)
-          print("MATCHES:", matches)
-          missing_clean= get_missing_ingredients(
-               recipe["ingredients"],
-                      user_tokens
-          )
-          print(recipe["title"], score, percent)
-          if percent >=30:     
-               result.append({"match_percent": percent,"missing_ingredients":missing_clean,
-               "allergens": allergens,
-               "alternatives": alternatives,               
-               "recipe": recipe})
-                    
-     result.sort(key=lambda x:x["match_percent"],reverse=True)
-    
-     return result
-
-#  get_recipes_with_fallback
-def get_recipes_with_fallback(user_ingredients, recipes, exclude_ingredients=None, intolerances=None):
+def get_recipes_with_fallback(
+    user_ingredients: list[str],
+    recipes: list[dict],
+    exclude_ingredients: list[str] | None = None,
+    intolerances: list[str] | None = None,
+) -> list[dict]:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
 
@@ -370,27 +299,29 @@ def get_recipes_with_fallback(user_ingredients, recipes, exclude_ingredients=Non
         user_ingredients,
         recipes,
         exclude_ingredients=exclude_ingredients,
-        intolerances=intolerances
+        intolerances=intolerances,
     )
 
     if matches:
         return matches
 
-    # KI-Rezept generieren
     ai_recipe = generate_recipe_with_ai(user_ingredients)
 
-    # Intoleranz-Check für KI-Rezept
     if violates_intolerance(ai_recipe, intolerances):
         return []
 
-    # Allergene für KI-Rezept berechnen
+    exclude_tokens = process_ingredients(exclude_ingredients)
+    if recipe_contains_excluded(ai_recipe, exclude_tokens):
+        return []
+
     allergens = detect_allergens(ai_recipe["ingredients"])
     alternatives = get_allergen_alternatives(allergens)
 
-    return [{
-        "match_percent": 0.0,
-        "recipe": ai_recipe,
-        "allergens": allergens,
-        "alternatives": alternatives
-    }]
-
+    return [
+        {
+            "match_percent": 0.0,
+            "recipe": ai_recipe,
+            "allergens": allergens,
+            "alternatives": alternatives,
+        }
+    ]
