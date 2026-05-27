@@ -68,10 +68,6 @@ export default function IngredientInput({
             Unverträglichkeiten
           </label>
           <div className="mt-4">
-            <label className="block font-semibold mb-1">
-              Unverträglichkeiten
-            </label>
-
             <div className="grid grid-cols-2 gap-2">
               {intoleranceOptions.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2">
