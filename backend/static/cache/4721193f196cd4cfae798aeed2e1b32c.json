@@ -1,0 +1,23 @@
+{
+  "title": "Vegane Spargel-Pfanne",
+  "ingredients": [
+    "500g Spargel",
+    "2 EL Olivenöl",
+    "1 Zwiebel",
+    "2 Knoblauchzehen",
+    "1 TL getrockneter Thymian",
+    "Salz und Pfeffer nach Geschmack",
+    "2 EL Zitronensaft"
+  ],
+  "zubereitung": [
+    "Den Spargel waschen und die Enden abschneiden.",
+    "Die Zwiebel und den Knoblauch fein hacken.",
+    "In einer großen Pfanne das Olivenöl erhitzen und die Zwiebel und den Knoblauch darin glasig anbraten.",
+    "Den Spargel hinzufügen und etwa 5-7 Minuten unter gelegentlichem Rühren anbraten, bis er leicht gebräunt ist.",
+    "Thymian, Salz und Pfeffer hinzufügen und gut vermischen.",
+    "Zum Schluss den Zitronensaft über den Spargel geben und nochmals umrühren.",
+    "Heiß servieren und genießen!"
+  ],
+  "image": "http://localhost:8000/static/images/b80f03db0c89f4dc6f7fe7205fa72e34.png",
+  "is_ai": true
+}

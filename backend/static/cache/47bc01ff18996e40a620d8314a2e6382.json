@@ -1,0 +1,22 @@
+{
+  "title": "Haselnuss-Brot",
+  "ingredients": [
+    "200g Haselnüsse",
+    "500g Weizenmehl",
+    "1 Päckchen Trockenhefe",
+    "1 TL Salz",
+    "350ml Wasser",
+    "2 EL Olivenöl"
+  ],
+  "zubereitung": [
+    "Die Haselnüsse in einer Pfanne anrösten, bis sie duften.",
+    "Die gerösteten Haselnüsse fein mahlen.",
+    "In einer großen Schüssel Mehl, gemahlene Haselnüsse, Trockenhefe und Salz vermischen.",
+    "Wasser und Olivenöl hinzufügen und alles zu einem Teig vermischen.",
+    "Den Teig 30 Minuten gehen lassen.",
+    "Den Teig in eine Brotform geben und bei 200°C für 45 Minuten backen.",
+    "Das Brot aus dem Ofen nehmen und abkühlen lassen."
+  ],
+  "image": "http://localhost:8000/static/images/d50b14c30ea5b8fa8a2f357bb0d90799.png",
+  "is_ai": true
+}

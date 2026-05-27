@@ -38,7 +38,7 @@ SYNONYMS = {
 
 ALLERGENS = {
     "gluten": ["weizen", "mehl", "brot", "nudel", "pasta", "spaghetti", "penne"],
-    "laktose": ["milch", "sahne", "rahm", "käse", "butter", "joghurt"],
+    "Laktose": ["milch", "Sahne", "Rahm", "käse", "butter", "joghurt"],
     "nüsse": ["mandel", "haselnuss", "haselnuesse", "haselnüsse", "walnuss", "cashew", "erdnuss"],
     "soja": ["soja", "sojasauce", "tofu"],
     "sellerie": ["sellerie", "stangensellerie"],

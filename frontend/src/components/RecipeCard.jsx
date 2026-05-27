@@ -13,6 +13,11 @@ export default function RecipeCard({
 
   const btn = 'px-4 py-2 rounded font-medium transition-colors';
 
+  function capitalize(word) {
+    if (!word) return '';
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }
+
   function getMatchColor(percent) {
     if (percent >= 70) return 'bg-green-500';
     if (percent >= 40) return 'bg-yellow-500';
@@ -101,10 +106,10 @@ export default function RecipeCard({
           <ul className="list-disc list-inside text-red-700">
             {allergens.map((a) => (
               <li key={a}>
-                <span className="font-semibold">{a}</span>
+                <span className="font-semibold">{capitalize(a)}</span>
                 {alternatives[a] && alternatives[a].length > 0 && (
                   <span className="text-gray-700 ml-2">
-                    → Alternativen: {alternatives[a].join(', ')}
+                    → Alternativen: {alternatives[a].map(capitalize).join(', ')}
                   </span>
                 )}
               </li>

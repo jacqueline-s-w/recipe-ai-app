@@ -24,6 +24,15 @@ export default function IngredientInput({
     setIngredients((prev) => [...prev, ...newIngredients]);
     setInput(''); //Eingabefeld leeren
   }
+  const intoleranceOptions = [
+    { value: 'gluten', label: 'Gluten' },
+    { value: 'laktose', label: 'Laktose' },
+    { value: 'histamin', label: 'Histamin' },
+    { value: 'fruktose', label: 'Fruktose' },
+    { value: 'soja', label: 'Soja' },
+    { value: 'tierisches_eiweiss', label: 'Tierisches Eiweiß' },
+    { value: 'nuesse', label: 'Nüsse' },
+  ];
 
   return (
     <section className="bg-white shadow p-4 rounded-xl">
@@ -55,23 +64,34 @@ export default function IngredientInput({
           <label className="block font-semibold mb-1">
             Unverträglichkeiten
           </label>
-          <select
-            multiple
-            value={intolerances}
-            onChange={(e) =>
-              setIntolerances(
-                Array.from(e.target.selectedOptions, (opt) => opt.value),
-              )
-            }
-            className="w-full p-2 border rounded h-32">
-            <option value="gluten">Gluten</option>
-            <option value="laktose">Laktose</option>
-            <option value="histamin">Histamin</option>
-            <option value="fruktose">Fruktose</option>
-            <option value="soja">Soja</option>
-            <option value="tierisches_eiweiss">Tierisches Eiweiß</option>
-            <option value="nuesse">Nüsse</option>
-          </select>
+          <div className="mt-4">
+            <label className="block font-semibold mb-1">
+              Unverträglichkeiten
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              {intoleranceOptions.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    value={opt.value}
+                    checked={intolerances.includes(opt.value)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setIntolerances([...intolerances, opt.value]);
+                      } else {
+                        setIntolerances(
+                          intolerances.filter((i) => i !== opt.value),
+                        );
+                      }
+                    }}
+                    className="h-4 w-4"
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
