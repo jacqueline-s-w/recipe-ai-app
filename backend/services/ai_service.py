@@ -46,7 +46,7 @@ def generate_image_from_prompt(prompt: str) -> str:
     # 1) Prüfen, ob Bild bereits existiert → Caching
     if os.path.exists(filepath):
         print("IMAGE CACHE HIT – kein neuer OpenAI-Call")
-        return f"http://localhost:8000/static/images/{filename}"
+        return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
 
     # 2) Wenn nicht im Cache → OpenAI aufrufen
     url = "https://api.openai.com/v1/images/generations"
@@ -86,7 +86,7 @@ def generate_image_from_prompt(prompt: str) -> str:
     with open(filepath, "wb") as f:
         f.write(image_bytes)
 
-    return f"http://localhost:8000/static/images/{filename}"
+    return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
 
 
 
