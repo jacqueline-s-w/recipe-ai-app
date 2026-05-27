@@ -1,0 +1,23 @@
+{
+  "title": "Tofu-Pfanne mit asiatischem Geschmack",
+  "ingredients": [
+    "250g Tofu",
+    "2 EL Sojasauce",
+    "1 EL Reisessig",
+    "1 TL Sesamöl",
+    "1 Zwiebel",
+    "2 Knoblauchzehen",
+    "1 EL gehackter Ingwer",
+    "Salz und Pfeffer nach Geschmack"
+  ],
+  "zubereitung": [
+    "Den Tofu in kleine Würfel schneiden und auf einem Teller mit Küchenpapier abtupfen.",
+    "In einer großen Pfanne das Sesamöl erhitzen und die Zwiebel und den Knoblauch darin anbraten, bis sie weich sind.",
+    "Den Ingwer hinzufügen und für 1 Minute mitbraten.",
+    "Den Tofu hinzufügen und von allen Seiten goldbraun anbraten.",
+    "Sojasauce und Reisessig hinzufügen und alles gut vermischen.",
+    "Mit Salz und Pfeffer abschmecken und servieren."
+  ],
+  "image": "http://localhost:8000/static/images/c2caf1bef91a8f8426c7250c946253a6.png",
+  "is_ai": true
+}

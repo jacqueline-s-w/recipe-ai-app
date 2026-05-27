@@ -42,17 +42,20 @@ export default function IngredientInput({
         </label>
 
         <input
-          // type="text"
+          id="zutat"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="border p-2 rounded w-full"
           placeholder="z.B. Tomate, Käse, Basilikum"
         />
         <div className="mt-4">
-          <label className="block font-semibold mb-1">
+          <label
+            htmlFor="ausgeschlossene zutat"
+            className="block font-semibold mb-1">
             Zutaten ausschließen
           </label>
           <input
+            id="ausgeschlossene zutat"
             type="text"
             placeholder="z.B. Zwiebel, Knoblauch, Zucker"
             value={excludeIngredients}
@@ -94,7 +97,10 @@ export default function IngredientInput({
           </div>
         </div>
 
-        <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded
+  hover:bg-blue-700 transition-colors
+  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
           Hinzufügen
         </button>
       </form>
@@ -108,6 +114,7 @@ export default function IngredientInput({
 
       <button
         type="button"
+        aria-label="Rezepte anhand der eingegebenen Zutaten suchen"
         onClick={() =>
           onFindRecipes(
             ingredients,
@@ -119,7 +126,8 @@ export default function IngredientInput({
           )
         }
         disabled={loading}
-        className={`w-full ${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded font-medium transition-colors`}>
+        className={`w-full ${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded font-medium transition-colors
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
         {loading ? 'Suche...' : 'Rezepte finden'}
       </button>
     </section>

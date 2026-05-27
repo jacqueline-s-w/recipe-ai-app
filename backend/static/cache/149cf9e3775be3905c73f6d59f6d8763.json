@@ -1,0 +1,19 @@
+{
+  "title": "Vegane Tomaten-Basilikum-Bruschetta",
+  "ingredients": [
+    "4 Tomaten, gewürfelt",
+    "1/4 Bund frisches Basilikum, gehackt",
+    "2 EL Olivenöl",
+    "1 TL Balsamico-Essig",
+    "Salz und Pfeffer nach Geschmack",
+    "4 Scheiben Vollkornbrot"
+  ],
+  "zubereitung": [
+    "Die Tomatenwürfel in einer Schüssel mit Olivenöl, Balsamico-Essig, Salz und Pfeffer vermischen.",
+    "Das gehackte Basilikum hinzufügen und vorsichtig unterheben.",
+    "Die Vollkornbrotscheiben toasten oder leicht anbraten.",
+    "Die Tomaten-Basilikum-Mischung auf das Brot geben und sofort servieren."
+  ],
+  "image": "http://localhost:8000/static/images/c51b1cbd75f90885da1cf24547061089.png",
+  "is_ai": true
+}

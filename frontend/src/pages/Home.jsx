@@ -56,7 +56,7 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-3xl">
+    <div id="main" className="container mx-auto p-4 md:p-6 max-w-3xl">
       <h1 className="text-4xl font-bold mb-6">AI Recipe Finder 🔍🍽️</h1>
 
       <IngredientInput

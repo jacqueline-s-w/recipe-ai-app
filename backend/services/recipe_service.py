@@ -48,7 +48,7 @@ ALLERGENS = {
 }
 
 ALLERGEN_ALTERNATIVES = {
-    "gluten": ["glutenfreie nudeln", "reis", "quinoa"],
+    "gluten": ["brot (glutenfreies)","nudeln (glutenfreie)", "reis", "quinoa"],
     "laktose": ["hafermilch", "mandelmilch", "veganer käse"],
     "nüsse": ["sonnenblumenkerne", "kürbiskerne"],
     "soja": ["kokosaminos", "tamari (glutenfrei)"],
@@ -138,17 +138,23 @@ def detect_allergens(recipe_ingredients: list[str]) -> list[str]:
         tokens = {normalize_token(t) for t in tokens}
 
         for allergen, words in ALLERGENS.items():
+            normalized_words = {normalize_token(w) for w in words}
+
+            # 1) Exakte Worttreffer
+            if tokens & normalized_words:
+                found_allergens.add(allergen)
+                continue
+
+            # 2) Zusammengesetzte Wörter prüfen (z.B. vollkornbrot → brot)
             for token in tokens:
-                if token in words:
-                    found_allergens.add(allergen)
-                    continue
-                for w in words:
-                    if len(token) > 2 and len(w) > 2:
-                        if fuzzy_match(token, w):
-                            found_allergens.add(allergen)
-                            break
+                for w in normalized_words:
+                    if w in token and len(w) > 2:
+                        found_allergens.add(allergen)
+                        break
 
     return list(found_allergens)
+
+
 
 
 def get_allergen_alternatives(allergens: list[str]) -> dict[str, list[str]]:

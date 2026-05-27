@@ -46,9 +46,14 @@ export default function RecipeCard({
 
   return (
     <article className="border rounded-lg p-4 shadow-md backdrop-blur-sm relative">
+      <span className="sr-only">
+        {matchPercent > 0
+          ? `${matchPercent} Prozent Übereinstimmung`
+          : 'KI-generiertes Rezept'}
+      </span>
       {matchPercent > 0 && (
         <div
-          className={`absolute top-2 right-2 text-white text-xs font-bold px-2 py-1 rounded-full ${getMatchColor(
+          className={`absolute top-2 right-2 z-10 text-white text-xs font-bold px-2 py-1 rounded-full ${getMatchColor(
             matchPercent,
           )}`}>
           {matchPercent}% Match
@@ -56,20 +61,20 @@ export default function RecipeCard({
       )}
 
       {matchPercent === 0 && (
-        <div className="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded-full bg-purple-500 text-white">
+        <div className="absolute top-2 right-2 z-10 text-xs font-bold px-2 py-1 rounded-full bg-purple-500 text-white">
           AI-Vorschlag
         </div>
       )}
 
       {/* Bild + Skeleton */}
-      <div className="relative w-full h-48 mb-3">
+      <div className="relative w-full h-48 mb-3 z-0">
         {!imageLoaded && (
           <div className="absolute inset-0 bg-gray-300 animate-pulse rounded-md"></div>
         )}
 
         <img
           src={imageUrl}
-          alt={recipe.title}
+          alt={`Rezeptbild: ${recipe.title}`}
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageLoaded(true)}
           className={`w-full h-48 object-cover rounded-md transition-opacity duration-300 ${
@@ -80,15 +85,26 @@ export default function RecipeCard({
 
       {/* Bild neu generieren */}
       <button
+        aria-label="Bild für dieses Rezept neu generieren"
         onClick={handleRegenerateImage}
         disabled={regenerating}
         className={`mt-2 px-4 py-2 rounded font-medium text-white transition-colors ${
           regenerating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-        }`}>
+        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
         {regenerating ? 'Generiere...' : 'Bild neu generieren'}
       </button>
 
       <h3 className="text-xl font-semibold mt-3">{recipe.title}</h3>
+      <button
+        onClick={() => {
+          const text = `${recipe.title}. Zutaten: ${recipe.ingredients.join(', ')}. Zubereitung: ${steps.join('. ')}`;
+          const utterance = new SpeechSynthesisUtterance(text);
+          speechSynthesis.speak(utterance);
+        }}
+        className="mt-2 px-3 py-1 bg-purple-600 text-white rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+        aria-label="Rezept vorlesen">
+        Vorlesen
+      </button>
 
       <p className="text-sm text-gray-600">⏱ {recipe.time} Minuten</p>
 
