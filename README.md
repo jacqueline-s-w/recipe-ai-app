@@ -13,6 +13,24 @@ Die App kombiniert:
 
 ---
 
+---
+
+## 🚀 Live Demo
+
+### 🔗 Frontend
+
+https://recipe-ai-app-frontend.onrender.com/
+
+### 🔗 Backend (API)
+
+https://recipe-ai-app-pbyc.onrender.com/
+
+**Hinweis:**  
+Das Backend schläft im Free‑Tier nach ca. 15 Minuten Inaktivität ein.  
+Der erste Request kann daher **3–10 Sekunden** dauern.
+
+---
+
 ## 📸 Screenshot
 
 ![App Screenshot](./frontend/public/images/Allergene_Alternativen.png)
