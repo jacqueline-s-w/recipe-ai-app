@@ -27,7 +27,7 @@ https://recipe-ai-app-pbyc.onrender.com/
 
 **Hinweis:**  
 Das Backend schläft im Free‑Tier nach ca. 15 Minuten Inaktivität ein.  
-Der erste Request kann daher **3–10 Sekunden** dauern.
+Der erste Request kann daher **50–60 Sekunden** dauern.
 
 ---
 
@@ -60,16 +60,18 @@ Der erste Request kann daher **3–10 Sekunden** dauern.
 - Python 3.11
 - FastAPI
 - Uvicorn
-- difflib (Fuzzy Matching)
 - Eigene Allergen‑ und Intoleranz‑Engine
-- KI‑Rezeptgenerator
+- Groq API für KI-Rezeptgenerierung
+- OpenAI Image API für optionale Bildgenerierung
+- difflib (für Fuzzy Matching)
 
 ### Frontend
 
-- React (Vite)
+- React
+- Vite
 - TailwindCSS
 - Fetch API
-- Screenreader‑Optimierungen
+- Web Spech API
 
 ---
 

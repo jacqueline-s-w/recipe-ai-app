@@ -17,10 +17,15 @@ export default function Home() {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(''), 4000);
+      const timer = setTimeout(() => setError(''), 5000);
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  function clearResults() {
+    setRecipes([]);
+    setError('');
+  }
 
   async function findRecipes(ingredients, excludeIngredients, intolerances) {
     if (ingredients.length === 0) {
@@ -28,6 +33,7 @@ export default function Home() {
       return;
     }
 
+    setError('');
     setLoading(true);
 
     try {
@@ -37,22 +43,26 @@ export default function Home() {
         body: JSON.stringify({
           ingredients,
           exclude_ingredients: excludeIngredients,
-          intolerances: intolerances,
+          intolerances,
         }),
       });
 
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || 'Die Rezeptsuche ist fehlgeschlagen.',
+        );
+      }
+
       const data = await res.json();
       setRecipes(data.recipes || []);
-
-      if (!data.recipes || data.recipes.length === 0) {
-        setError('Keine passenden Rezepte gefunden.');
-      }
     } catch (error) {
       console.log('Fehler beim Abrufen der Rezepte:', error);
-      setError('Das Backend ist nicht erreichbar.');
+      setRecipes([]);
+      setError(error.message || 'Das Backend ist nicht erreichbar.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
@@ -63,14 +73,16 @@ export default function Home() {
         ingredients={ingredients}
         setIngredients={setIngredients}
         onFindRecipes={findRecipes}
+        onClearResults={clearResults}
         loading={loading}
       />
 
       {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
 
       {loading && (
-        <p className="mt-4 text-gray-600 animate-pulse">
-          🔄 Suche nach passenden Rezepten...
+        <p className="mt-4 text-gray-600" role="status" aria-live="polite">
+          Suche nach passenden Rezepten. Wenn das Backend gerade aufwacht, kann
+          die erste Anfrage bis zu 60 Sekunden dauern.
         </p>
       )}
 

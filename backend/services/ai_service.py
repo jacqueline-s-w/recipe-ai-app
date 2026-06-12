@@ -8,65 +8,65 @@ import hashlib
 import requests
 from groq import Groq
 
-# -------------------------------------------------------------------
-# API Keys
-# -------------------------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OAI_API_KEY = os.getenv("OAI_API_KEY")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-print("GROQ KEY:", GROQ_API_KEY)
-print("OPENAI KEY:", OAI_API_KEY)
-
-
-# -------------------------------------------------------------------
-# Caching: gleiche Zutaten → kein neuer KI-Call
-# -------------------------------------------------------------------
 CACHE_DIR = "static/cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-def get_cache_key(ingredients: list[str]) -> str:
-    key = ",".join(sorted(ingredients))
-    return hashlib.md5(key.encode()).hexdigest()
+
+def get_cache_key(
+    ingredients: list[str],
+    exclude_ingredients: list[str] | None = None,
+    intolerances: list[str] | None = None,
+) -> str:
+    exclude_ingredients = exclude_ingredients or []
+    intolerances = intolerances or []
+
+    key_data = {
+        "ingredients": sorted(i.strip().lower() for i in ingredients if i.strip()),
+        "exclude_ingredients": sorted(i.strip().lower() for i in exclude_ingredients if i.strip()),
+        "intolerances": sorted(i.strip().lower() for i in intolerances if i.strip()),
+    }
+
+    return hashlib.md5(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
 
 
-# -------------------------------------------------------------------
-# Bildgenerierung über OpenAI (günstig & optimiert)
-# -------------------------------------------------------------------
-def generate_image_from_prompt(prompt: str) -> str:
-    # Hash für Caching
+def generate_image_from_prompt(prompt: str) -> str | None:
     image_key = hashlib.md5(prompt.encode()).hexdigest()
     filename = f"{image_key}.png"
     filepath = f"static/images/{filename}"
 
-    # Ordner sicherstellen
     os.makedirs("static/images", exist_ok=True)
 
-    # 1) Prüfen, ob Bild bereits existiert → Caching
     if os.path.exists(filepath):
-        print("IMAGE CACHE HIT – kein neuer OpenAI-Call")
+        print("IMAGE CACHE HIT - kein neuer OpenAI-Call")
         return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
 
-    # 2) Wenn nicht im Cache → OpenAI aufrufen
+    if not OAI_API_KEY:
+        print("IMAGE ERROR: OAI_API_KEY fehlt.")
+        return None
+
     url = "https://api.openai.com/v1/images/generations"
 
     headers = {
         "Authorization": f"Bearer {OAI_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     payload = {
         "model": "gpt-image-1.5",
         "prompt": prompt,
-        "size": "1024x1024"
+        "size": "1024x1024",
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(url, headers=headers, json=payload, timeout=90)
 
     try:
         data = response.json()
-    except:
+    except Exception:
         print("IMAGE ERROR: OpenAI lieferte keine JSON-Antwort:")
         print(response.text[:500])
         return None
@@ -82,39 +82,91 @@ def generate_image_from_prompt(prompt: str) -> str:
 
     image_bytes = base64.b64decode(b64_data)
 
-    # 3) Bild speichern (für zukünftige Anfragen)
     with open(filepath, "wb") as f:
         f.write(image_bytes)
 
     return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
 
 
+def _fallback_recipe(ingredients: list[str]) -> dict:
+    cleaned = [ingredient.strip() for ingredient in ingredients if ingredient.strip()]
+    title_base = ", ".join(cleaned[:3]) if cleaned else "deinen Zutaten"
 
-# -------------------------------------------------------------------
-# Rezeptgenerierung mit Groq (extrem gekürzt & günstig)
-# -------------------------------------------------------------------
-def generate_recipe_with_ai(ingredients: list[str]) -> dict:
-    # Caching prüfen
-    cache_key = get_cache_key(ingredients)
+    return {
+        "title": f"Schnelles Rezept mit {title_base}",
+        "time": 25,
+        "time_minutes": 25,
+        "portionen": "2",
+        "ingredients": cleaned,
+        "zubereitung": [
+            "Alle Zutaten vorbereiten, waschen und in passende Stücke schneiden.",
+            "Eine Pfanne oder einen Topf erhitzen und die Zutaten nach Garzeit nacheinander anbraten oder garen.",
+            "Mit Salz, Pfeffer und passenden Gewürzen abschmecken.",
+            "Alles kurz zusammenziehen lassen und warm servieren.",
+        ],
+        "image": None,
+        "is_ai": True,
+    }
+
+
+def _ensure_user_ingredients_are_in_recipe(recipe: dict, user_ingredients: list[str]) -> dict:
+    recipe_ingredients = recipe.get("ingredients", [])
+    normalized_recipe_text = " ".join(recipe_ingredients).lower()
+
+    for ingredient in user_ingredients:
+        ingredient = ingredient.strip()
+        if ingredient and ingredient.lower() not in normalized_recipe_text:
+            recipe_ingredients.append(ingredient)
+
+    recipe["ingredients"] = recipe_ingredients
+    return recipe
+
+
+def generate_recipe_with_ai(
+    ingredients: list[str],
+    exclude_ingredients: list[str] | None = None,
+    intolerances: list[str] | None = None,
+) -> dict:
+    exclude_ingredients = exclude_ingredients or []
+    intolerances = intolerances or []
+
+    cache_key = get_cache_key(ingredients, exclude_ingredients, intolerances)
     cache_file = f"{CACHE_DIR}/{cache_key}.json"
 
     if os.path.exists(cache_file):
         with open(cache_file, "r", encoding="utf-8") as f:
-            print("CACHE HIT – kein neuer KI-Call")
+            print("CACHE HIT - kein neuer KI-Call")
             return json.load(f)
 
     ingredients_text = ", ".join(ingredients)
+    exclude_text = ", ".join(exclude_ingredients) if exclude_ingredients else "keine"
+    intolerances_text = ", ".join(intolerances) if intolerances else "keine"
 
-    system_prompt = "Gib ausschließlich gültiges JSON zurück."
+    system_prompt = "Du bist ein Rezeptgenerator. Gib ausschließlich gültiges JSON zurück."
 
     user_prompt = f"""
-Erstelle ein kreatives, aber alltagstaugliches veganes Rezept auf Deutsch aus folgenden Zutaten:
+Erstelle ein alltagstaugliches veganes Rezept auf Deutsch.
+
+Pflicht-Zutaten:
 {ingredients_text}
 
-Gib ausschließlich folgendes JSON zurück:
+Diese Zutaten dürfen nicht verwendet werden:
+{exclude_text}
+
+Diese Unverträglichkeiten müssen berücksichtigt werden:
+{intolerances_text}
+
+Wichtige Regeln:
+- Verwende alle Pflicht-Zutaten sinnvoll im Rezept.
+- Verwende keine ausgeschlossenen Zutaten.
+- Achte auf die genannten Unverträglichkeiten.
+- Gib eine realistische Zubereitungszeit in Minuten an.
+- Gib ausschließlich dieses JSON-Format zurück:
 
 {{
   "title": "kurzer Rezepttitel",
+  "time_minutes": 25,
+  "portionen": "2",
   "ingredients": ["Zutat mit Menge und Einheit", "..."],
   "zubereitung": ["Schritt-für-Schritt-Anleitung", "..."]
 }}
@@ -125,40 +177,32 @@ Gib ausschließlich folgendes JSON zurück:
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
-            temperature=0.1
+            temperature=0.2,
         )
 
         content = response.choices[0].message.content.strip()
 
         if content.startswith("```"):
-            content = content.split("```")[1].strip()
+            content = content.replace("```json", "").replace("```", "").strip()
 
         data = json.loads(content)
+        data = _ensure_user_ingredients_are_in_recipe(data, ingredients)
 
-        ingredients_text = ", ".join(data["ingredients"])
-
-        image_prompt = (
-            f"Professionelles Food-Foto von einem veganen Gericht: {data['title']}. "
-            f"Hauptzutaten: {ingredients_text}. "
-            f"Stil: hochwertige Food Photography, helles natürliches Tageslicht, "
-            f"realistisch, 50mm Linse, leichte Tiefenschärfe, serviert auf einem Teller, "
-            f"sauberer Hintergrund, von leicht schräg oben fotografiert."
-        )
-
-        image_url = generate_image_from_prompt(image_prompt)
-
+        time_minutes = data.get("time_minutes") or data.get("time") or 25
 
         result = {
-            "title": data["title"],
-            "ingredients": data["ingredients"],
-            "zubereitung": data["zubereitung"],
-            "image": image_url,
+            "title": data.get("title", "KI-Rezept"),
+            "time": time_minutes,
+            "time_minutes": time_minutes,
+            "portionen": data.get("portionen", "2"),
+            "ingredients": data.get("ingredients", ingredients),
+            "zubereitung": data.get("zubereitung", []),
+            "image": None,
             "is_ai": True,
         }
 
-        # In Cache speichern
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
@@ -166,10 +210,4 @@ Gib ausschließlich folgendes JSON zurück:
 
     except Exception as e:
         print("AI ERROR:", e)
-        return {
-            "title": "AI Rezept (Fallback)",
-            "ingredients": ingredients,
-            "zubereitung": ["Fehler bei der KI-Generierung."],
-            "image": None,
-            "is_ai": True,
-        }
+        return _fallback_recipe(ingredients)

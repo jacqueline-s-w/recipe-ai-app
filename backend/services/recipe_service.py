@@ -6,15 +6,17 @@ from difflib import SequenceMatcher
 STOP_INGREDIENTS = {
     "salz",
     "pfeffer",
+    "oel",
     "öl",
     "wasser",
 }
 
 STOPWORDS = {
     "zum", "zur", "der", "die", "das",
-    "und", "oder", "mit", "für",
+    "und", "oder", "mit", "für", "fuer",
     "etwas", "frisch", "frische",
-    "klein", "groß", "vegan", "vegane", "vegetarisch", "vegetarische",
+    "klein", "groß", "gross", "vegan", "vegane",
+    "vegetarisch", "vegetarische",
 }
 
 SYNONYMS = {
@@ -25,20 +27,20 @@ SYNONYMS = {
     "knoblauch": ["knoblauchzehe", "knoblauchzehen"],
     "tomat": ["tomate", "tomaten", "cherrytomate", "cherrytomaten"],
     "paprika": ["paprikaschote", "paprikaschoten"],
-    "karotte": ["karotten", "möhre", "möhren"],
+    "karotte": ["karotten", "möhre", "möhren", "moehre", "moehren"],
     "sellerie": ["stangensellerie"],
     "reis": ["basmati", "jasmine", "vollkornreis"],
-    "kartoffel": ["kartoffeln", "erdapfel", "erdäpfel"],
-    "käse": ["cheddar", "gouda", "mozzarella", "parmesan"],
+    "kartoffel": ["kartoffeln", "erdapfel", "erdäpfel", "erdaepfel"],
+    "käse": ["kaese", "cheddar", "gouda", "mozzarella", "parmesan"],
     "milch": ["vollmilch", "hafermilch", "mandelmilch"],
     "sahne": ["rahm", "schlagsahne"],
     "butter": ["margarine"],
-    "öl": ["olivenöl", "sonnenblumenöl", "rapsöl"],
+    "öl": ["oel", "olivenöl", "olivenoel", "sonnenblumenöl", "sonnenblumenoel", "rapsöl", "rapsoel"],
 }
 
 ALLERGENS = {
     "gluten": ["weizen", "mehl", "brot", "nudel", "pasta", "spaghetti", "penne"],
-    "Laktose": ["milch", "Sahne", "Rahm", "käse", "butter", "joghurt"],
+    "laktose": ["milch", "sahne", "rahm", "käse", "kaese", "butter", "joghurt"],
     "nüsse": ["mandel", "haselnuss", "haselnuesse", "haselnüsse", "walnuss", "cashew", "erdnuss"],
     "soja": ["soja", "sojasauce", "tofu"],
     "sellerie": ["sellerie", "stangensellerie"],
@@ -48,78 +50,35 @@ ALLERGENS = {
 }
 
 ALLERGEN_ALTERNATIVES = {
-    "gluten": ["brot (glutenfreies)","nudeln (glutenfreie)", "reis", "quinoa"],
-    "laktose": ["hafermilch", "mandelmilch", "veganer käse"],
-    "nüsse": ["sonnenblumenkerne", "kürbiskerne"],
-    "soja": ["kokosaminos", "tamari (glutenfrei)"],
-    "sellerie": ["fenchel", "pastinake"],
-    "sesam": ["sonnenblumenkerne"],
-    "ei": ["leinsamen-ei", "apfelmus"],
-    "fisch": ["tofu", "jackfruit"],
+    "gluten": ["glutenfreies Brot", "glutenfreie Nudeln", "Reis", "Quinoa"],
+    "laktose": ["Hafermilch", "Mandelmilch", "veganer Käse"],
+    "nüsse": ["Sonnenblumenkerne", "Kürbiskerne"],
+    "soja": ["Kokosaminos", "Tamari glutenfrei"],
+    "sellerie": ["Fenchel", "Pastinake"],
+    "sesam": ["Sonnenblumenkerne"],
+    "ei": ["Leinsamen-Ei", "Apfelmus"],
+    "fisch": ["Tofu", "Jackfruit"],
 }
 
 INTOLERANCE_MAP = {
-    "histamin": [
-        "tomate", "tomaten", "spinat", "avocado", "aubergine",
-        "kichererbse", "sojasauce", "essig", "wein",
-    ],
-    "fruktose": [
-        "apfel", "birne", "honig", "fruchtsaft", "traube", "mango",
-    ],
-    "laktose": [
-        "milch", "sahne", "rahm", "käse", "butter", "joghurt",
-    ],
-    "gluten": [
-        "weizen", "mehl", "nudel", "pasta", "brot", "spaghetti",
-    ],
-    "tierisches_eiweiss": [
-        "ei", "milch", "käse", "joghurt", "fisch", "fleisch",
-    ],
-    "soja": [
-        "soja", "tofu", "sojasauce",
-    ],
-    "nuesse": [
-        "nuss", "nüsse", "haselnuss", "walnuss", "cashew", "erdnuss",
-    ],
+    "histamin": ["tomate", "tomaten", "spinat", "avocado", "aubergine", "kichererbse", "sojasauce", "essig", "wein"],
+    "fruktose": ["apfel", "birne", "honig", "fruchtsaft", "traube", "mango"],
+    "laktose": ["milch", "sahne", "rahm", "käse", "kaese", "butter", "joghurt"],
+    "gluten": ["weizen", "mehl", "nudel", "pasta", "brot", "spaghetti"],
+    "tierisches_eiweiss": ["ei", "milch", "käse", "kaese", "joghurt", "fisch", "fleisch"],
+    "soja": ["soja", "tofu", "sojasauce"],
+    "nuesse": ["nuss", "nüsse", "nuesse", "haselnuss", "walnuss", "cashew", "erdnuss"],
 }
-
-
-def expand_synonyms(token: str) -> set:
-    expanded = {token}
-    for key, values in SYNONYMS.items():
-        if token == key:
-            expanded.update(values)
-            continue
-        if token in values:
-            expanded.add(key)
-            expanded.update(values)
-    return expanded
-
-
-def tokenize_ingredient(text: str) -> list[str]:
-    text = text.lower().strip()
-    return re.findall(r"\b\w+\b", text)
-
-
-def process_ingredients(ingredients: list[str]) -> set[str]:
-    tokens = set()
-    for ingredient in ingredients:
-        word_tokens = tokenize_ingredient(ingredient)
-        for token in word_tokens:
-            token = normalize_token(token)
-            if (
-                token not in STOP_INGREDIENTS
-                and token not in STOPWORDS
-                and not token.isdigit()
-                and len(token) > 2
-            ):
-                tokens.add(token)
-    return tokens
 
 
 def normalize_token(token: str) -> str:
     token = token.lower().strip()
-    token = token.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    token = (
+        token.replace("ä", "ae")
+        .replace("ö", "oe")
+        .replace("ü", "ue")
+        .replace("ß", "ss")
+    )
 
     endings = ["en", "er", "n", "e", "s"]
     for end in endings:
@@ -130,44 +89,88 @@ def normalize_token(token: str) -> str:
     return token
 
 
+def expand_synonyms(token: str) -> set[str]:
+    expanded = {token}
+    normalized_token = normalize_token(token)
+
+    for key, values in SYNONYMS.items():
+        normalized_key = normalize_token(key)
+        normalized_values = {normalize_token(value) for value in values}
+
+        if normalized_token == normalized_key:
+            expanded.update(normalized_values)
+            expanded.add(normalized_key)
+
+        if normalized_token in normalized_values:
+            expanded.add(normalized_key)
+            expanded.update(normalized_values)
+
+    return expanded
+
+
+def tokenize_ingredient(text: str) -> list[str]:
+    text = text.lower().strip()
+    return re.findall(r"\b\w+\b", text)
+
+
+def process_ingredients(ingredients: list[str]) -> set[str]:
+    tokens = set()
+
+    for ingredient in ingredients:
+        for token in tokenize_ingredient(ingredient):
+            token = normalize_token(token)
+
+            if (
+                token not in STOP_INGREDIENTS
+                and token not in STOPWORDS
+                and not token.isdigit()
+                and len(token) > 2
+            ):
+                tokens.add(token)
+
+    return tokens
+
+
+def fuzzy_match(a: str, b: str) -> bool:
+    ratio = SequenceMatcher(None, a, b).ratio()
+
+    if len(a) <= 4 or len(b) <= 4:
+        return ratio >= 0.9
+
+    return ratio >= 0.8
+
+
 def detect_allergens(recipe_ingredients: list[str]) -> list[str]:
     found_allergens = set()
 
     for ingredient in recipe_ingredients:
-        tokens = tokenize_ingredient(ingredient)
-        tokens = {normalize_token(t) for t in tokens}
+        tokens = {normalize_token(t) for t in tokenize_ingredient(ingredient)}
 
         for allergen, words in ALLERGENS.items():
             normalized_words = {normalize_token(w) for w in words}
 
-            # 1) Exakte Worttreffer
             if tokens & normalized_words:
                 found_allergens.add(allergen)
                 continue
 
-            # 2) Zusammengesetzte Wörter prüfen (z.B. vollkornbrot → brot)
             for token in tokens:
-                for w in normalized_words:
-                    if w in token and len(w) > 2:
+                for word in normalized_words:
+                    if word in token and len(word) > 2:
                         found_allergens.add(allergen)
                         break
 
-    return list(found_allergens)
-
-
+    return sorted(found_allergens)
 
 
 def get_allergen_alternatives(allergens: list[str]) -> dict[str, list[str]]:
-    return {a: ALLERGEN_ALTERNATIVES.get(a, []) for a in allergens}
+    return {allergen: ALLERGEN_ALTERNATIVES.get(allergen, []) for allergen in allergens}
 
 
 def get_missing_ingredients(recipe_ingredients: list[str], user_tokens: set[str]) -> list[str]:
-    missing_clean: list[str] = []
+    missing_clean = []
 
     for ingredient in recipe_ingredients:
-        ingredient_tokens = tokenize_ingredient(ingredient)
-        ingredient_tokens = {normalize_token(t) for t in ingredient_tokens}
-
+        ingredient_tokens = {normalize_token(t) for t in tokenize_ingredient(ingredient)}
         found = False
 
         for token in ingredient_tokens:
@@ -175,11 +178,10 @@ def get_missing_ingredients(recipe_ingredients: list[str], user_tokens: set[str]
                 found = True
                 break
 
-            for ut in user_tokens:
-                if len(token) > 2 and len(ut) > 2:
-                    if fuzzy_match(token, ut):
-                        found = True
-                        break
+            for user_token in user_tokens:
+                if len(token) > 2 and len(user_token) > 2 and fuzzy_match(token, user_token):
+                    found = True
+                    break
 
             if found:
                 break
@@ -190,29 +192,24 @@ def get_missing_ingredients(recipe_ingredients: list[str], user_tokens: set[str]
     return missing_clean
 
 
-def fuzzy_match(a: str, b: str) -> bool:
-    ratio = SequenceMatcher(None, a, b).ratio()
-
-    # kurze Wörter strenger behandeln
-    if len(a) <= 4 or len(b) <= 4:
-        return ratio >= 0.9
-
-    # längere Wörter toleranter
-    return ratio >= 0.8
-
-
 def recipe_contains_excluded(recipe: dict, exclude_tokens: set[str]) -> bool:
-    recipe_tokens = process_ingredients(recipe["ingredients"])
+    if not exclude_tokens:
+        return False
+
+    recipe_tokens = process_ingredients(recipe.get("ingredients", []))
     return bool(recipe_tokens & exclude_tokens)
 
 
 def violates_intolerance(recipe: dict, intolerances: list[str]) -> bool:
-    recipe_tokens = process_ingredients(recipe["ingredients"])
+    recipe_tokens = process_ingredients(recipe.get("ingredients", []))
+
     for intolerance in intolerances:
         forbidden = INTOLERANCE_MAP.get(intolerance, [])
-        forbidden = {normalize_token(f) for f in forbidden}
-        if recipe_tokens & forbidden:
+        forbidden_tokens = {normalize_token(f) for f in forbidden}
+
+        if recipe_tokens & forbidden_tokens:
             return True
+
     return False
 
 
@@ -224,8 +221,8 @@ def find_matching_recipes(
 ) -> list[dict]:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
-    result: list[dict] = []
 
+    result = []
     user_tokens = process_ingredients(user_ingredients)
     exclude_tokens = process_ingredients(exclude_ingredients)
 
@@ -236,27 +233,26 @@ def find_matching_recipes(
         if violates_intolerance(recipe, intolerances):
             continue
 
-        recipe_tokens = process_ingredients(recipe["ingredients"])
+        recipe_tokens = process_ingredients(recipe.get("ingredients", []))
 
-        matches: set[str] = set()
-        for ut in user_tokens:
-            user_group = expand_synonyms(ut)
-            u_norm = normalize_token(ut)
+        matches = set()
 
-            for rt in recipe_tokens:
-                recipe_group = expand_synonyms(rt)
-                r_norm = normalize_token(rt)
+        for user_token in user_tokens:
+            user_group = expand_synonyms(user_token)
+            user_norm = normalize_token(user_token)
+
+            for recipe_token in recipe_tokens:
+                recipe_group = expand_synonyms(recipe_token)
+                recipe_norm = normalize_token(recipe_token)
 
                 if user_group & recipe_group:
-                    matches.add(rt)
+                    matches.add(recipe_token)
                     continue
 
-                if len(u_norm) > 2 and len(r_norm) > 2:
-                    if fuzzy_match(u_norm, r_norm):
-                        matches.add(rt)
-                        continue
+                if len(user_norm) > 2 and len(recipe_norm) > 2 and fuzzy_match(user_norm, recipe_norm):
+                    matches.add(recipe_token)
 
-        missing_clean = get_missing_ingredients(recipe["ingredients"], user_tokens)
+        missing_clean = get_missing_ingredients(recipe.get("ingredients", []), user_tokens)
 
         score_user = len(matches) / len(user_tokens) if user_tokens else 0
         score_recipe = len(matches) / len(recipe_tokens) if recipe_tokens else 0
@@ -274,10 +270,10 @@ def find_matching_recipes(
 
         percent = round(score * 100, 2)
 
-        allergens = detect_allergens(recipe["ingredients"])
-        alternatives = get_allergen_alternatives(allergens)
-
         if percent >= 30:
+            allergens = detect_allergens(recipe.get("ingredients", []))
+            alternatives = get_allergen_alternatives(allergens)
+
             result.append(
                 {
                     "match_percent": percent,
@@ -311,23 +307,21 @@ def get_recipes_with_fallback(
     if matches:
         return matches
 
-    ai_recipe = generate_recipe_with_ai(user_ingredients)
+    ai_recipe = generate_recipe_with_ai(
+        user_ingredients,
+        exclude_ingredients=exclude_ingredients,
+        intolerances=intolerances,
+    )
 
-    if violates_intolerance(ai_recipe, intolerances):
-        return []
-
-    exclude_tokens = process_ingredients(exclude_ingredients)
-    if recipe_contains_excluded(ai_recipe, exclude_tokens):
-        return []
-
-    allergens = detect_allergens(ai_recipe["ingredients"])
+    allergens = detect_allergens(ai_recipe.get("ingredients", []))
     alternatives = get_allergen_alternatives(allergens)
 
     return [
         {
             "match_percent": 0.0,
-            "recipe": ai_recipe,
+            "missing_ingredients": [],
             "allergens": allergens,
             "alternatives": alternatives,
+            "recipe": ai_recipe,
         }
     ]
