@@ -20,6 +20,8 @@ STOPWORDS = {
 }
 
 SYNONYMS = {
+    "haehnchen": ["hähnchen", "huhn", "huehnchen", "hühnchen", "chicken"],
+    "huhn": ["hähnchen", "haehnchen", "huehnchen", "hühnchen", "chicken"],
     "erdbeer": ["erdbeere", "erdbeeren"],
     "zwiebel": ["zwiebeln", "schalotte", "schalotten"],
     "nudel": ["pasta", "spaghetti", "penne", "fusilli", "farfalle", "macaroni", "bandnudeln"],
@@ -61,11 +63,19 @@ ALLERGEN_ALTERNATIVES = {
 }
 
 INTOLERANCE_MAP = {
-    "histamin": ["tomate", "tomaten", "spinat", "avocado", "aubergine", "kichererbse", "sojasauce", "essig", "wein"],
+    "histamin": [
+        "tomate", "tomaten", "cherrytomate", "cherrytomaten",
+        "spinat", "avocado", "aubergine", "kichererbse",
+        "kichererbsen", "sojasauce", "essig", "wein",
+    ],
     "fruktose": ["apfel", "birne", "honig", "fruchtsaft", "traube", "mango"],
     "laktose": ["milch", "sahne", "rahm", "käse", "kaese", "butter", "joghurt"],
     "gluten": ["weizen", "mehl", "nudel", "pasta", "brot", "spaghetti"],
-    "tierisches_eiweiss": ["ei", "milch", "käse", "kaese", "joghurt", "fisch", "fleisch"],
+    "tierisches_eiweiss": [
+        "ei", "eier", "milch", "käse", "kaese", "joghurt",
+        "fisch", "fleisch", "hähnchen", "haehnchen", "huhn",
+        "hühnchen", "huehnchen", "chicken",
+    ],
     "soja": ["soja", "tofu", "sojasauce"],
     "nuesse": ["nuss", "nüsse", "nuesse", "haselnuss", "walnuss", "cashew", "erdnuss"],
 }
@@ -90,18 +100,17 @@ def normalize_token(token: str) -> str:
 
 
 def expand_synonyms(token: str) -> set[str]:
-    expanded = {token}
-    normalized_token = normalize_token(token)
+    expanded = {normalize_token(token)}
 
     for key, values in SYNONYMS.items():
         normalized_key = normalize_token(key)
         normalized_values = {normalize_token(value) for value in values}
 
-        if normalized_token == normalized_key:
+        if normalize_token(token) == normalized_key:
             expanded.update(normalized_values)
             expanded.add(normalized_key)
 
-        if normalized_token in normalized_values:
+        if normalize_token(token) in normalized_values:
             expanded.add(normalized_key)
             expanded.update(normalized_values)
 
@@ -138,6 +147,74 @@ def fuzzy_match(a: str, b: str) -> bool:
         return ratio >= 0.9
 
     return ratio >= 0.8
+
+
+def tokens_match(token: str, compare_token: str) -> bool:
+    token_group = expand_synonyms(token)
+    compare_group = expand_synonyms(compare_token)
+
+    if token_group & compare_group:
+        return True
+
+    return fuzzy_match(normalize_token(token), normalize_token(compare_token))
+
+
+def ingredient_matches_tokens(ingredient: str, forbidden_tokens: set[str]) -> bool:
+    ingredient_tokens = process_ingredients([ingredient])
+
+    for ingredient_token in ingredient_tokens:
+        for forbidden_token in forbidden_tokens:
+            if tokens_match(ingredient_token, forbidden_token):
+                return True
+
+    return False
+
+
+def get_forbidden_tokens_for_intolerances(intolerances: list[str]) -> set[str]:
+    forbidden_tokens = set()
+
+    for intolerance in intolerances:
+        forbidden = INTOLERANCE_MAP.get(intolerance, [])
+        forbidden_tokens.update(normalize_token(item) for item in forbidden)
+
+    return forbidden_tokens
+
+
+def get_problematic_user_ingredients(
+    user_ingredients: list[str],
+    exclude_ingredients: list[str],
+    intolerances: list[str],
+) -> list[str]:
+    exclude_tokens = process_ingredients(exclude_ingredients)
+    forbidden_tokens = get_forbidden_tokens_for_intolerances(intolerances)
+    blocked_tokens = exclude_tokens | forbidden_tokens
+
+    if not blocked_tokens:
+        return []
+
+    return [
+        ingredient
+        for ingredient in user_ingredients
+        if ingredient_matches_tokens(ingredient, blocked_tokens)
+    ]
+
+
+def get_safe_user_ingredients(
+    user_ingredients: list[str],
+    exclude_ingredients: list[str],
+    intolerances: list[str],
+) -> list[str]:
+    problematic = set(
+        get_problematic_user_ingredients(user_ingredients, exclude_ingredients, intolerances)
+    )
+
+    safe_ingredients = [
+        ingredient
+        for ingredient in user_ingredients
+        if ingredient not in problematic
+    ]
+
+    return safe_ingredients or ["Reis", "Kartoffeln", "Karotten"]
 
 
 def detect_allergens(recipe_ingredients: list[str]) -> list[str]:
@@ -201,13 +278,11 @@ def recipe_contains_excluded(recipe: dict, exclude_tokens: set[str]) -> bool:
 
 
 def violates_intolerance(recipe: dict, intolerances: list[str]) -> bool:
-    recipe_tokens = process_ingredients(recipe.get("ingredients", []))
+    recipe_ingredients = recipe.get("ingredients", [])
+    forbidden_tokens = get_forbidden_tokens_for_intolerances(intolerances)
 
-    for intolerance in intolerances:
-        forbidden = INTOLERANCE_MAP.get(intolerance, [])
-        forbidden_tokens = {normalize_token(f) for f in forbidden}
-
-        if recipe_tokens & forbidden_tokens:
+    for ingredient in recipe_ingredients:
+        if ingredient_matches_tokens(ingredient, forbidden_tokens):
             return True
 
     return False
@@ -234,22 +309,11 @@ def find_matching_recipes(
             continue
 
         recipe_tokens = process_ingredients(recipe.get("ingredients", []))
-
         matches = set()
 
         for user_token in user_tokens:
-            user_group = expand_synonyms(user_token)
-            user_norm = normalize_token(user_token)
-
             for recipe_token in recipe_tokens:
-                recipe_group = expand_synonyms(recipe_token)
-                recipe_norm = normalize_token(recipe_token)
-
-                if user_group & recipe_group:
-                    matches.add(recipe_token)
-                    continue
-
-                if len(user_norm) > 2 and len(recipe_norm) > 2 and fuzzy_match(user_norm, recipe_norm):
+                if tokens_match(user_token, recipe_token):
                     matches.add(recipe_token)
 
         missing_clean = get_missing_ingredients(recipe.get("ingredients", []), user_tokens)
@@ -307,9 +371,20 @@ def get_recipes_with_fallback(
     if matches:
         return matches
 
-    ai_recipe = generate_recipe_with_ai(
+    problematic_user_ingredients = get_problematic_user_ingredients(
         user_ingredients,
-        exclude_ingredients=exclude_ingredients,
+        exclude_ingredients,
+        intolerances,
+    )
+    safe_user_ingredients = get_safe_user_ingredients(
+        user_ingredients,
+        exclude_ingredients,
+        intolerances,
+    )
+
+    ai_recipe = generate_recipe_with_ai(
+        safe_user_ingredients,
+        exclude_ingredients=exclude_ingredients + problematic_user_ingredients,
         intolerances=intolerances,
     )
 
@@ -319,7 +394,7 @@ def get_recipes_with_fallback(
     return [
         {
             "match_percent": 0.0,
-            "missing_ingredients": [],
+            "missing_ingredients": problematic_user_ingredients,
             "allergens": allergens,
             "alternatives": alternatives,
             "recipe": ai_recipe,

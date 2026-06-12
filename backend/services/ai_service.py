@@ -90,7 +90,7 @@ def generate_image_from_prompt(prompt: str) -> str | None:
 
 def _fallback_recipe(ingredients: list[str]) -> dict:
     cleaned = [ingredient.strip() for ingredient in ingredients if ingredient.strip()]
-    title_base = ", ".join(cleaned[:3]) if cleaned else "deinen Zutaten"
+    title_base = ", ".join(cleaned[:3]) if cleaned else "verträglichen Zutaten"
 
     return {
         "title": f"Schnelles Rezept mit {title_base}",
@@ -100,7 +100,7 @@ def _fallback_recipe(ingredients: list[str]) -> dict:
         "ingredients": cleaned,
         "zubereitung": [
             "Alle Zutaten vorbereiten, waschen und in passende Stücke schneiden.",
-            "Eine Pfanne oder einen Topf erhitzen und die Zutaten nach Garzeit nacheinander anbraten oder garen.",
+            "Eine Pfanne oder einen Topf erhitzen und die Zutaten nach Garzeit nacheinander garen.",
             "Mit Salz, Pfeffer und passenden Gewürzen abschmecken.",
             "Alles kurz zusammenziehen lassen und warm servieren.",
         ],
@@ -130,7 +130,9 @@ def generate_recipe_with_ai(
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
 
-    cache_key = get_cache_key(ingredients, exclude_ingredients, intolerances)
+    cleaned_ingredients = [ingredient.strip() for ingredient in ingredients if ingredient.strip()]
+
+    cache_key = get_cache_key(cleaned_ingredients, exclude_ingredients, intolerances)
     cache_file = f"{CACHE_DIR}/{cache_key}.json"
 
     if os.path.exists(cache_file):
@@ -138,14 +140,14 @@ def generate_recipe_with_ai(
             print("CACHE HIT - kein neuer KI-Call")
             return json.load(f)
 
-    ingredients_text = ", ".join(ingredients)
+    ingredients_text = ", ".join(cleaned_ingredients)
     exclude_text = ", ".join(exclude_ingredients) if exclude_ingredients else "keine"
     intolerances_text = ", ".join(intolerances) if intolerances else "keine"
 
     system_prompt = "Du bist ein Rezeptgenerator. Gib ausschließlich gültiges JSON zurück."
 
     user_prompt = f"""
-Erstelle ein alltagstaugliches veganes Rezept auf Deutsch.
+Erstelle ein alltagstaugliches Rezept auf Deutsch.
 
 Pflicht-Zutaten:
 {ingredients_text}
@@ -157,9 +159,12 @@ Diese Unverträglichkeiten müssen berücksichtigt werden:
 {intolerances_text}
 
 Wichtige Regeln:
-- Verwende alle Pflicht-Zutaten sinnvoll im Rezept.
+- Verwende die Pflicht-Zutaten sinnvoll.
+- Wenn eine Pflicht-Zutat wegen Unverträglichkeit oder Ausschluss nicht geeignet ist, verwende sie nicht und ersetze sie passend.
 - Verwende keine ausgeschlossenen Zutaten.
-- Achte auf die genannten Unverträglichkeiten.
+- Bei Histamin keine Tomaten, kein Spinat, keine Avocado, keine Aubergine, keine Kichererbsen, keine Sojasauce, keinen Essig und keinen Wein verwenden.
+- Wenn Fleisch, Fisch, Ei oder Milchprodukte eingegeben wurden, darf das Rezept diese Zutaten enthalten, solange keine Unverträglichkeit dagegen spricht.
+- Erstelle nicht automatisch ein veganes Rezept.
 - Gib eine realistische Zubereitungszeit in Minuten an.
 - Gib ausschließlich dieses JSON-Format zurück:
 
@@ -188,7 +193,6 @@ Wichtige Regeln:
             content = content.replace("```json", "").replace("```", "").strip()
 
         data = json.loads(content)
-        data = _ensure_user_ingredients_are_in_recipe(data, ingredients)
 
         time_minutes = data.get("time_minutes") or data.get("time") or 25
 
@@ -197,7 +201,7 @@ Wichtige Regeln:
             "time": time_minutes,
             "time_minutes": time_minutes,
             "portionen": data.get("portionen", "2"),
-            "ingredients": data.get("ingredients", ingredients),
+            "ingredients": data.get("ingredients", cleaned_ingredients),
             "zubereitung": data.get("zubereitung", []),
             "image": None,
             "is_ai": True,
@@ -210,4 +214,4 @@ Wichtige Regeln:
 
     except Exception as e:
         print("AI ERROR:", e)
-        return _fallback_recipe(ingredients)
+        return _fallback_recipe(cleaned_ingredients)

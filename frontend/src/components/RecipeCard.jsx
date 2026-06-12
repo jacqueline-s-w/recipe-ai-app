@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 export default function RecipeCard({
   recipe,
   matchPercent,
-  missingIngredients,
+  missingIngredients = [],
   allergens = [],
   alternatives = {},
 }) {
@@ -17,11 +17,14 @@ export default function RecipeCard({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentSpeechIndex, setCurrentSpeechIndex] = useState(0);
+  const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
+  const [voiceControlMessage, setVoiceControlMessage] = useState('');
 
   const utteranceRef = useRef(null);
   const speechChunksRef = useRef([]);
   const currentSpeechIndexRef = useRef(0);
   const shouldStopSpeechRef = useRef(false);
+  const recognitionRef = useRef(null);
 
   const steps = recipe.zubereitung || recipe.steps || [];
   const time = recipe.time_minutes || recipe.time;
@@ -37,6 +40,35 @@ export default function RecipeCard({
     return 'bg-gray-400';
   }
 
+  function getAllergenSpeechText() {
+    if (!allergens.length) {
+      return [];
+    }
+
+    return [
+      'Hinweis zu Allergenen:',
+      ...allergens.map((allergen) => {
+        const alternativeText = alternatives[allergen]?.length
+          ? `Alternativen: ${alternatives[allergen].join(', ')}.`
+          : 'Keine Alternativen hinterlegt.';
+
+        return `${capitalize(allergen)}. ${alternativeText}`;
+      }),
+    ];
+  }
+
+  function getMissingIngredientsSpeechText() {
+    if (!missingIngredients.length) {
+      return [];
+    }
+
+    return [
+      `Folgende eingegebene Zutaten wurden nicht verwendet, weil sie fehlen, ausgeschlossen oder wegen einer Unverträglichkeit problematisch sind: ${missingIngredients.join(
+        ', ',
+      )}.`,
+    ];
+  }
+
   function buildSpeechChunks() {
     const titleText = recipe.title ? [`Rezept: ${recipe.title}.`] : [];
     const timeText = time ? [`Zubereitungszeit: ${time} Minuten.`] : [];
@@ -49,6 +81,9 @@ export default function RecipeCard({
         ? [`Zutaten: ${recipe.ingredients.join(', ')}.`]
         : [];
 
+    const allergenText = getAllergenSpeechText();
+    const missingText = getMissingIngredientsSpeechText();
+
     const preparationText =
       steps.length > 0
         ? [
@@ -58,11 +93,15 @@ export default function RecipeCard({
         : [];
 
     if (readMode === 'ingredients') {
-      return [...titleText, ...ingredientText];
+      return [...titleText, ...ingredientText, ...allergenText, ...missingText];
     }
 
     if (readMode === 'preparation') {
       return [...titleText, ...preparationText];
+    }
+
+    if (readMode === 'warnings') {
+      return [...titleText, ...allergenText, ...missingText];
     }
 
     return [
@@ -70,13 +109,25 @@ export default function RecipeCard({
       ...timeText,
       ...portionsText,
       ...ingredientText,
+      ...allergenText,
+      ...missingText,
       ...preparationText,
     ];
   }
 
   const speechChunks = useMemo(
     () => buildSpeechChunks(),
-    [readMode, recipe.title, recipe.ingredients, recipe.portionen, steps, time],
+    [
+      readMode,
+      recipe.title,
+      recipe.ingredients,
+      recipe.portionen,
+      steps,
+      time,
+      allergens,
+      alternatives,
+      missingIngredients,
+    ],
   );
 
   useEffect(() => {
@@ -88,6 +139,7 @@ export default function RecipeCard({
 
     return () => {
       stopReading();
+      stopVoiceControl();
     };
   }, [speechChunks]);
 
@@ -183,6 +235,112 @@ export default function RecipeCard({
     speakChunk(nextIndex);
   }
 
+  function handleVoiceCommand(command) {
+    const normalizedCommand = command.toLowerCase();
+
+    if (
+      normalizedCommand.includes('vorlesen') ||
+      normalizedCommand.includes('start')
+    ) {
+      startReading();
+      return;
+    }
+
+    if (
+      normalizedCommand.includes('pause') ||
+      normalizedCommand.includes('pausieren')
+    ) {
+      pauseReading();
+      return;
+    }
+
+    if (
+      normalizedCommand.includes('weiter') ||
+      normalizedCommand.includes('fortsetzen')
+    ) {
+      resumeReading();
+      return;
+    }
+
+    if (
+      normalizedCommand.includes('stopp') ||
+      normalizedCommand.includes('stop')
+    ) {
+      stopReading();
+      return;
+    }
+
+    if (normalizedCommand.includes('zurück')) {
+      jumpReading(-1);
+      return;
+    }
+
+    if (
+      normalizedCommand.includes('vor') ||
+      normalizedCommand.includes('weiter springen')
+    ) {
+      jumpReading(1);
+      return;
+    }
+
+    setVoiceControlMessage(
+      'Befehl nicht erkannt. Möglich sind: vorlesen, pause, weiter, stopp, zurück, vor.',
+    );
+  }
+
+  function startVoiceControl() {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceControlMessage(
+        'Sprachbefehle werden in diesem Browser nicht unterstützt. Bitte Chrome oder Edge verwenden.',
+      );
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'de-DE';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+      const latestResult = event.results[event.results.length - 1];
+      const transcript = latestResult[0].transcript;
+      setVoiceControlMessage(`Erkannter Befehl: ${transcript}`);
+      handleVoiceCommand(transcript);
+    };
+
+    recognition.onerror = () => {
+      setVoiceControlMessage(
+        'Sprachbefehl konnte nicht erkannt werden. Bitte erneut versuchen.',
+      );
+    };
+
+    recognition.onend = () => {
+      if (voiceControlEnabled) {
+        recognition.start();
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setVoiceControlEnabled(true);
+    setVoiceControlMessage(
+      'Sprachbefehle aktiv. Möglich sind: vorlesen, pause, weiter, stopp, zurück, vor.',
+    );
+  }
+
+  function stopVoiceControl() {
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    setVoiceControlEnabled(false);
+  }
+
   async function handleRegenerateImage() {
     setRegenerating(true);
     setImageLoaded(false);
@@ -256,7 +414,9 @@ export default function RecipeCard({
       </div>
 
       <button
+        type="button"
         aria-label="Bild für dieses Rezept neu generieren"
+        title="Bild für dieses Rezept neu generieren"
         onClick={handleRegenerateImage}
         disabled={regenerating}
         className={`mt-2 px-4 py-2 rounded font-medium text-white transition-colors ${
@@ -290,7 +450,10 @@ export default function RecipeCard({
           onChange={(event) => setReadMode(event.target.value)}
           className="w-full border rounded p-2 mb-3">
           <option value="all">Alles vorlesen</option>
-          <option value="ingredients">Nur Zutaten vorlesen</option>
+          <option value="ingredients">Zutaten und Hinweise vorlesen</option>
+          <option value="warnings">
+            Nur Allergene und fehlende Zutaten vorlesen
+          </option>
           <option value="preparation">Nur Zubereitung vorlesen</option>
         </select>
 
@@ -366,6 +529,39 @@ export default function RecipeCard({
           Vorspulen
         </button>
 
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={voiceControlEnabled ? stopVoiceControl : startVoiceControl}
+            title={
+              voiceControlEnabled
+                ? 'Sprachbefehle deaktivieren'
+                : 'Sprachbefehle aktivieren'
+            }
+            aria-label={
+              voiceControlEnabled
+                ? 'Sprachbefehle deaktivieren'
+                : 'Sprachbefehle aktivieren'
+            }
+            className={`px-3 py-2 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              voiceControlEnabled
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}>
+            {voiceControlEnabled ? 'Sprachbefehle aus' : 'Sprachbefehle an'}
+          </button>
+
+          <p className="text-sm text-gray-600" aria-live="polite">
+            Sag: vorlesen, pause, weiter, stopp, zurück oder vor.
+          </p>
+        </div>
+
+        {voiceControlMessage && (
+          <p className="mt-2 text-sm text-gray-600" aria-live="polite">
+            {voiceControlMessage}
+          </p>
+        )}
+
         {(isSpeaking || isPaused) && (
           <p className="mt-2 text-sm text-gray-600" aria-live="polite">
             Abschnitt {currentSpeechIndex + 1} von {speechChunks.length}
@@ -403,7 +599,7 @@ export default function RecipeCard({
 
       {missingIngredients?.length > 0 && (
         <div className="mt-2 text-sm text-red-500">
-          Fehlt: {missingIngredients.join(', ')}
+          Nicht verwendet: {missingIngredients.join(', ')}
         </div>
       )}
 
