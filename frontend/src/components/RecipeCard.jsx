@@ -7,10 +7,9 @@ export default function RecipeCard({
   allergens = [],
   alternatives = {},
 }) {
-  const fallbackImage = '/images/Allergene_Alternativen.png';
-
-  const [imageUrl, setImageUrl] = useState(recipe.image || fallbackImage);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageUrl, setImageUrl] = useState(recipe.image || null);
+  const [imageLoaded, setImageLoaded] = useState(!recipe.image);
+  const [imageFailed, setImageFailed] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
   const [readMode, setReadMode] = useState('all');
@@ -41,9 +40,7 @@ export default function RecipeCard({
   }
 
   function getAllergenSpeechText() {
-    if (!allergens.length) {
-      return [];
-    }
+    if (!allergens.length) return [];
 
     return [
       'Hinweis zu Allergenen:',
@@ -58,9 +55,7 @@ export default function RecipeCard({
   }
 
   function getMissingIngredientsSpeechText() {
-    if (!missingIngredients.length) {
-      return [];
-    }
+    if (!missingIngredients.length) return [];
 
     return [
       `Folgende eingegebene Zutaten wurden nicht verwendet, weil sie fehlen, ausgeschlossen oder wegen einer Unverträglichkeit problematisch sind: ${missingIngredients.join(
@@ -143,9 +138,14 @@ export default function RecipeCard({
     };
   }, [speechChunks]);
 
+  useEffect(() => {
+    setImageUrl(recipe.image || null);
+    setImageLoaded(!recipe.image);
+    setImageFailed(false);
+  }, [recipe.image]);
+
   function speakChunk(index) {
     const chunks = speechChunksRef.current;
-
     if (!chunks.length) return;
 
     const safeIndex = Math.min(Math.max(index, 0), chunks.length - 1);
@@ -203,7 +203,6 @@ export default function RecipeCard({
 
   function pauseReading() {
     if (!isSpeaking) return;
-
     window.speechSynthesis.pause();
     setIsPaused(true);
   }
@@ -317,12 +316,6 @@ export default function RecipeCard({
       );
     };
 
-    recognition.onend = () => {
-      if (voiceControlEnabled) {
-        recognition.start();
-      }
-    };
-
     recognitionRef.current = recognition;
     recognition.start();
     setVoiceControlEnabled(true);
@@ -344,6 +337,7 @@ export default function RecipeCard({
   async function handleRegenerateImage() {
     setRegenerating(true);
     setImageLoaded(false);
+    setImageFailed(false);
 
     try {
       const res = await fetch(
@@ -362,12 +356,15 @@ export default function RecipeCard({
 
       if (data.image) {
         setImageUrl(data.image);
+      } else {
+        setImageFailed(true);
       }
     } catch (error) {
       console.log('Fehler beim Generieren des Bildes:', error);
-      setImageUrl(fallbackImage);
+      setImageFailed(true);
     } finally {
       setRegenerating(false);
+      setImageLoaded(true);
     }
   }
 
@@ -394,23 +391,35 @@ export default function RecipeCard({
         </div>
       )}
 
-      <div className="relative w-full h-48 mb-3 z-0 bg-gray-100 rounded-md overflow-hidden">
-        {!imageLoaded && (
-          <div className="absolute inset-0 bg-gray-200" aria-hidden="true" />
-        )}
+      <div className="relative w-full h-48 mb-3 z-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+        {imageUrl && !imageFailed ? (
+          <>
+            {!imageLoaded && (
+              <div
+                className="absolute inset-0 bg-gray-200"
+                aria-hidden="true"
+              />
+            )}
 
-        <img
-          src={imageUrl}
-          alt={`Rezeptbild: ${recipe.title}`}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => {
-            setImageUrl(fallbackImage);
-            setImageLoaded(true);
-          }}
-          className={`w-full h-48 object-cover rounded-md transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
+            <img
+              src={imageUrl}
+              alt={`Rezeptbild: ${recipe.title}`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                setImageFailed(true);
+                setImageLoaded(true);
+                setImageUrl(null);
+              }}
+              className={`w-full h-48 object-cover rounded-md transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </>
+        ) : (
+          <div className="text-center px-4 text-sm text-gray-600">
+            Für dieses KI-Rezept wurde noch kein Bild generiert.
+          </div>
+        )}
       </div>
 
       <button
@@ -422,7 +431,7 @@ export default function RecipeCard({
         className={`mt-2 px-4 py-2 rounded font-medium text-white transition-colors ${
           regenerating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
-        {regenerating ? 'Generiere Bild...' : 'Bild neu generieren'}
+        {regenerating ? 'Generiere Bild...' : 'Bild generieren'}
       </button>
 
       <h3 className="text-xl font-semibold mt-3">{recipe.title}</h3>
@@ -463,8 +472,7 @@ export default function RecipeCard({
             onClick={() => jumpReading(-1)}
             title="Zurückspulen"
             aria-label="Zurückspulen"
-            className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700
-            focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+            className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
             Zurück
           </button>
 
@@ -473,8 +481,7 @@ export default function RecipeCard({
             onClick={startReading}
             title="Vorlesen starten"
             aria-label="Vorlesen starten"
-            className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700
-            focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+            className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
             Start
           </button>
 
@@ -484,11 +491,7 @@ export default function RecipeCard({
             title="Vorlesen pausieren"
             aria-label="Vorlesen pausieren"
             disabled={!isSpeaking || isPaused}
-            className={`px-3 py-2 text-white rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 ${
-              !isSpeaking || isPaused
-                ? 'bg-gray-400'
-                : 'bg-yellow-500 hover:bg-yellow-600'
-            }`}>
+            className={`px-3 py-2 text-white rounded ${!isSpeaking || isPaused ? 'bg-gray-400' : 'bg-yellow-500 hover:bg-yellow-600'}`}>
             Pause
           </button>
 
@@ -498,9 +501,7 @@ export default function RecipeCard({
             title="Vorlesen fortsetzen"
             aria-label="Vorlesen fortsetzen"
             disabled={!isPaused}
-            className={`px-3 py-2 text-white rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-              !isPaused ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-            }`}>
+            className={`px-3 py-2 text-white rounded ${!isPaused ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}>
             Weiter
           </button>
 
@@ -510,11 +511,7 @@ export default function RecipeCard({
             title="Vorlesen stoppen"
             aria-label="Vorlesen stoppen"
             disabled={!isSpeaking && !isPaused}
-            className={`px-3 py-2 text-white rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-              !isSpeaking && !isPaused
-                ? 'bg-gray-400'
-                : 'bg-red-600 hover:bg-red-700'
-            }`}>
+            className={`px-3 py-2 text-white rounded ${!isSpeaking && !isPaused ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}>
             Stopp
           </button>
         </div>
@@ -524,8 +521,7 @@ export default function RecipeCard({
           onClick={() => jumpReading(1)}
           title="Vorspulen"
           aria-label="Vorspulen"
-          className="mt-2 w-full px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700
-          focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+          className="mt-2 w-full px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
           Vorspulen
         </button>
 
@@ -543,7 +539,7 @@ export default function RecipeCard({
                 ? 'Sprachbefehle deaktivieren'
                 : 'Sprachbefehle aktivieren'
             }
-            className={`px-3 py-2 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            className={`px-3 py-2 text-white rounded ${
               voiceControlEnabled
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'

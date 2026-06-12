@@ -14,6 +14,7 @@ OAI_API_KEY = os.getenv("OAI_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 CACHE_DIR = "static/cache"
+CACHE_VERSION = "recipe-cache-v3-no-auto-images"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
@@ -26,12 +27,19 @@ def get_cache_key(
     intolerances = intolerances or []
 
     key_data = {
+        "version": CACHE_VERSION,
         "ingredients": sorted(i.strip().lower() for i in ingredients if i.strip()),
         "exclude_ingredients": sorted(i.strip().lower() for i in exclude_ingredients if i.strip()),
         "intolerances": sorted(i.strip().lower() for i in intolerances if i.strip()),
     }
 
     return hashlib.md5(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
+
+
+def clean_cached_recipe(recipe: dict) -> dict:
+    recipe["image"] = None
+    recipe["is_ai"] = True
+    return recipe
 
 
 def generate_image_from_prompt(prompt: str) -> str | None:
@@ -109,19 +117,6 @@ def _fallback_recipe(ingredients: list[str]) -> dict:
     }
 
 
-def _ensure_user_ingredients_are_in_recipe(recipe: dict, user_ingredients: list[str]) -> dict:
-    recipe_ingredients = recipe.get("ingredients", [])
-    normalized_recipe_text = " ".join(recipe_ingredients).lower()
-
-    for ingredient in user_ingredients:
-        ingredient = ingredient.strip()
-        if ingredient and ingredient.lower() not in normalized_recipe_text:
-            recipe_ingredients.append(ingredient)
-
-    recipe["ingredients"] = recipe_ingredients
-    return recipe
-
-
 def generate_recipe_with_ai(
     ingredients: list[str],
     exclude_ingredients: list[str] | None = None,
@@ -136,9 +131,9 @@ def generate_recipe_with_ai(
     cache_file = f"{CACHE_DIR}/{cache_key}.json"
 
     if os.path.exists(cache_file):
-        with open(cache_file, "r", encoding="utf-8") as f:
-            print("CACHE HIT - kein neuer KI-Call")
-            return json.load(f)
+      with open(cache_file, "r", encoding="utf-8") as f:
+          print("CACHE HIT - kein neuer KI-Call")
+          return clean_cached_recipe(json.load(f))
 
     ingredients_text = ", ".join(cleaned_ingredients)
     exclude_text = ", ".join(exclude_ingredients) if exclude_ingredients else "keine"
