@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function capitalize(word) {
   if (!word) return '';
@@ -9,6 +9,15 @@ function getMatchColor(percent) {
   if (percent >= 70) return 'bg-green-500';
   if (percent >= 40) return 'bg-yellow-500';
   return 'bg-gray-400';
+}
+
+function normalizeCommand(command) {
+  return command
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.,!?;:]/g, '')
+    .trim();
 }
 
 export default function RecipeCard({
@@ -22,11 +31,11 @@ export default function RecipeCard({
   const [imageLoaded, setImageLoaded] = useState(!recipe.image);
   const [imageFailed, setImageFailed] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-
   const [readMode, setReadMode] = useState('all');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentSpeechIndex, setCurrentSpeechIndex] = useState(0);
+  const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
   const [isRecordingVoiceCommand, setIsRecordingVoiceCommand] = useState(false);
   const [voiceControlMessage, setVoiceControlMessage] = useState('');
 
@@ -36,9 +45,11 @@ export default function RecipeCard({
   const isPausedRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const shouldStopSpeechRef = useRef(false);
+  const voiceControlEnabledRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const voiceCommandTimeoutRef = useRef(null);
+  const voiceRestartTimeoutRef = useRef(null);
 
   const steps = useMemo(
     () => recipe.zubereitung || recipe.steps || [],
@@ -130,13 +141,7 @@ export default function RecipeCard({
     speechChunksRef.current = speechChunks;
     currentSpeechIndexRef.current = 0;
     setCurrentSpeechIndex(0);
-
     stopReading();
-
-    return () => {
-      stopReading();
-      stopVoiceCommandRecording({ transcribe: false });
-    };
   }, [speechChunks]);
 
   useEffect(() => {
@@ -146,6 +151,10 @@ export default function RecipeCard({
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
   }, [isSpeaking]);
+
+  useEffect(() => {
+    voiceControlEnabledRef.current = voiceControlEnabled;
+  }, [voiceControlEnabled]);
 
   useEffect(() => {
     setImageUrl(recipe.image || null);
@@ -257,56 +266,68 @@ export default function RecipeCard({
   }
 
   function handleVoiceCommand(command) {
-    const normalizedCommand = command.toLowerCase();
+    const normalizedCommand = normalizeCommand(command);
 
     if (
       normalizedCommand.includes('vorlesen') ||
-      normalizedCommand.includes('start')
+      normalizedCommand.includes('start') ||
+      normalizedCommand.includes('lesen')
     ) {
       startReading();
-      return;
+      return true;
     }
 
     if (
       normalizedCommand.includes('pause') ||
-      normalizedCommand.includes('pausieren')
+      normalizedCommand.includes('pausieren') ||
+      normalizedCommand.includes('anhalten')
     ) {
       pauseReading();
-      return;
+      return true;
     }
 
     if (
-      normalizedCommand.includes('weiter') ||
-      normalizedCommand.includes('fortsetzen')
+      normalizedCommand === 'weiter' ||
+      normalizedCommand.includes('weiterlesen') ||
+      normalizedCommand.includes('fortsetzen') ||
+      normalizedCommand.includes('fortfahren')
     ) {
       resumeReading();
-      return;
+      return true;
     }
 
     if (
       normalizedCommand.includes('stopp') ||
-      normalizedCommand.includes('stop')
+      normalizedCommand.includes('stop') ||
+      normalizedCommand.includes('beenden')
     ) {
       stopReading();
-      return;
-    }
-
-    if (normalizedCommand.includes('zurück')) {
-      jumpReading(-1);
-      return;
+      return true;
     }
 
     if (
-      normalizedCommand.includes('vor') ||
-      normalizedCommand.includes('weiter springen')
+      normalizedCommand.includes('zuruck') ||
+      normalizedCommand.includes('vorherig')
+    ) {
+      jumpReading(-1);
+      return true;
+    }
+
+    if (
+      normalizedCommand.includes('vorspulen') ||
+      normalizedCommand.includes('weiter springen') ||
+      normalizedCommand.includes('nachster') ||
+      normalizedCommand.includes('naechster') ||
+      normalizedCommand === 'vor'
     ) {
       jumpReading(1);
-      return;
+      return true;
     }
 
     setVoiceControlMessage(
-      'Befehl nicht erkannt. Möglich sind: vorlesen, pause, weiter, stopp, zurück, vor.',
+      'Befehl nicht erkannt. Möglich sind: vorlesen, pause, weiterlesen, stopp, zurück, vor.',
     );
+    return false;
   }
 
   function getSupportedAudioMimeType() {
@@ -326,6 +347,19 @@ export default function RecipeCard({
     if (mimeType.includes('mp4')) return 'command.mp4';
     if (mimeType.includes('ogg')) return 'command.ogg';
     return 'command.webm';
+  }
+
+  function scheduleNextVoiceCommand() {
+    if (!voiceControlEnabledRef.current) return;
+
+    if (voiceRestartTimeoutRef.current) {
+      window.clearTimeout(voiceRestartTimeoutRef.current);
+    }
+
+    voiceRestartTimeoutRef.current = window.setTimeout(() => {
+      voiceRestartTimeoutRef.current = null;
+      startVoiceCommandRecording();
+    }, 300);
   }
 
   async function transcribeVoiceCommand(audioBlob, filename) {
@@ -350,25 +384,35 @@ export default function RecipeCard({
       const transcript = data.transcript?.trim();
 
       if (!transcript) {
-        setVoiceControlMessage('Kein Sprachbefehl erkannt. Bitte erneut versuchen.');
+        setVoiceControlMessage('Kein Sprachbefehl erkannt. Ich höre weiter zu.');
+        scheduleNextVoiceCommand();
         return;
       }
 
-      setVoiceControlMessage(`Erkannter Befehl: ${transcript}`);
-      handleVoiceCommand(transcript);
+      const commandWasHandled = handleVoiceCommand(transcript);
+      setVoiceControlMessage(
+        commandWasHandled
+          ? `Erkannter Befehl: ${transcript}`
+          : `Nicht erkannt: ${transcript}`,
+      );
     } catch (error) {
       console.log('Fehler beim Auswerten des Sprachbefehls:', error);
       setVoiceControlMessage(
-        'Sprachbefehl konnte nicht ausgewertet werden. Bitte erneut versuchen.',
+        'Sprachbefehl konnte nicht ausgewertet werden. Ich höre weiter zu.',
       );
+    } finally {
+      scheduleNextVoiceCommand();
     }
   }
 
   async function startVoiceCommandRecording() {
+    if (!voiceControlEnabledRef.current || mediaRecorderRef.current) return;
+
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       setVoiceControlMessage(
         'Sprachbefehle werden in diesem Browser nicht unterstützt.',
       );
+      stopVoiceControl();
       return;
     }
 
@@ -391,6 +435,11 @@ export default function RecipeCard({
         mediaRecorderRef.current = null;
         setIsRecordingVoiceCommand(false);
 
+        if (!voiceControlEnabledRef.current) {
+          audioChunksRef.current = [];
+          return;
+        }
+
         const audioBlob = new Blob(audioChunksRef.current, {
           type: mediaRecorder.mimeType || mimeType || 'audio/webm',
         });
@@ -398,7 +447,8 @@ export default function RecipeCard({
         audioChunksRef.current = [];
 
         if (audioBlob.size === 0) {
-          setVoiceControlMessage('Keine Audiodaten erkannt. Bitte erneut versuchen.');
+          setVoiceControlMessage('Keine Audiodaten erkannt. Ich höre weiter zu.');
+          scheduleNextVoiceCommand();
           return;
         }
 
@@ -411,20 +461,21 @@ export default function RecipeCard({
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecordingVoiceCommand(true);
-      setVoiceControlMessage('Sprich jetzt deinen Befehl.');
+      setVoiceControlMessage('Sprachbefehle bleiben aktiv. Sprich jetzt.');
 
       voiceCommandTimeoutRef.current = window.setTimeout(() => {
         stopVoiceCommandRecording();
-      }, 5000);
+      }, 3500);
     } catch (error) {
       console.log('Fehler beim Starten der Sprachaufnahme:', error);
       setVoiceControlMessage(
         'Mikrofon konnte nicht gestartet werden. Bitte Berechtigung prüfen.',
       );
+      stopVoiceControl();
     }
   }
 
-  function stopVoiceCommandRecording({ transcribe = true } = {}) {
+  function stopVoiceCommandRecording() {
     if (voiceCommandTimeoutRef.current) {
       window.clearTimeout(voiceCommandTimeoutRef.current);
       voiceCommandTimeoutRef.current = null;
@@ -437,21 +488,32 @@ export default function RecipeCard({
       return;
     }
 
-    if (!transcribe) {
-      recorder.onstop = () => {
-        recorder.stream.getTracks().forEach((track) => track.stop());
-      };
-      audioChunksRef.current = [];
-    }
-
     if (recorder.state !== 'inactive') {
       recorder.stop();
     }
+  }
 
-    if (!transcribe) {
-      mediaRecorderRef.current = null;
-      setIsRecordingVoiceCommand(false);
+  function startVoiceControl() {
+    voiceControlEnabledRef.current = true;
+    setVoiceControlEnabled(true);
+    setVoiceControlMessage(
+      'Sprachbefehle aktiv. Sag: vorlesen, pause, weiterlesen, stopp, zurück oder vor.',
+    );
+    startVoiceCommandRecording();
+  }
+
+  function stopVoiceControl() {
+    voiceControlEnabledRef.current = false;
+    setVoiceControlEnabled(false);
+
+    if (voiceRestartTimeoutRef.current) {
+      window.clearTimeout(voiceRestartTimeoutRef.current);
+      voiceRestartTimeoutRef.current = null;
     }
+
+    stopVoiceCommandRecording();
+    audioChunksRef.current = [];
+    setIsRecordingVoiceCommand(false);
   }
 
   async function handleRegenerateImage() {
@@ -495,7 +557,7 @@ export default function RecipeCard({
 
       {matchPercent > 0 && (
         <div
-          className={`absolute top-2 right-2 z-10 text-white text-xs font-bold px-2 py-1 rounded-full ${getMatchColor(
+          className={`absolute top-2 right-2 z-10 rounded-full px-2 py-1 text-xs font-bold text-white ${getMatchColor(
             matchPercent,
           )}`}>
           {matchPercent}% Match
@@ -503,7 +565,7 @@ export default function RecipeCard({
       )}
 
       {matchPercent === 0 && (
-        <div className="absolute top-2 right-2 z-10 text-xs font-bold px-2 py-1 rounded-full bg-purple-500 text-white">
+        <div className="absolute top-2 right-2 z-10 rounded-full bg-purple-500 px-2 py-1 text-xs font-bold text-white">
           KI-Vorschlag
         </div>
       )}
@@ -533,7 +595,7 @@ export default function RecipeCard({
             />
           </>
         ) : (
-          <div className="text-center px-4 text-sm text-gray-600">
+          <div className="px-4 text-center text-sm text-gray-600">
             Für dieses KI-Rezept wurde noch kein Bild generiert.
           </div>
         )}
@@ -556,8 +618,8 @@ export default function RecipeCard({
       </h3>
 
       {time && (
-        <p className="text-sm text-gray-600 mt-1">
-          ⏱ Zubereitungszeit: {time} Minuten
+        <p className="mt-1 text-sm text-gray-600">
+          Zubereitungszeit: {time} Minuten
         </p>
       )}
 
@@ -568,7 +630,7 @@ export default function RecipeCard({
       <div className="mt-3 rounded border bg-gray-50 p-3 sm:p-4">
         <label
           htmlFor={`read-mode-${recipe.title}`}
-          className="block font-semibold mb-2">
+          className="mb-2 block font-semibold">
           Vorlesen:
         </label>
 
@@ -657,29 +719,27 @@ export default function RecipeCard({
         <div className="mt-2 grid grid-cols-1 items-center gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={
-              isRecordingVoiceCommand
-                ? () => stopVoiceCommandRecording()
-                : startVoiceCommandRecording
-            }
+            onClick={voiceControlEnabled ? stopVoiceControl : startVoiceControl}
             title={
-              isRecordingVoiceCommand
-                ? 'Sprachaufnahme stoppen'
-                : 'Sprachbefehl aufnehmen'
+              voiceControlEnabled
+                ? 'Sprachbefehle deaktivieren'
+                : 'Sprachbefehle aktivieren'
             }
             aria-label={
-              isRecordingVoiceCommand
-                ? 'Sprachaufnahme stoppen'
-                : 'Sprachbefehl aufnehmen'
+              voiceControlEnabled
+                ? 'Sprachbefehle deaktivieren'
+                : 'Sprachbefehle aktivieren'
             }
             className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
-              isRecordingVoiceCommand
+              voiceControlEnabled
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}>
-            {isRecordingVoiceCommand
-              ? 'Aufnahme stoppen'
-              : 'Sprachbefehl aufnehmen'}
+            {voiceControlEnabled
+              ? isRecordingVoiceCommand
+                ? 'Hört zu...'
+                : 'Sprachbefehle ausschalten'
+              : 'Sprachbefehle an'}
           </button>
 
           <p className="text-sm leading-relaxed text-gray-600" aria-live="polite">
@@ -711,8 +771,8 @@ export default function RecipeCard({
       </ul>
 
       {allergens.length > 0 && (
-        <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 rounded">
-          <h4 className="font-bold text-red-700 mb-1">⚠️ Allergene</h4>
+        <div className="mt-4 rounded border-l-4 border-red-500 bg-red-100 p-3">
+          <h4 className="mb-1 font-bold text-red-700">Allergene</h4>
           <ul className="list-outside list-disc space-y-1 pl-5 text-red-700">
             {allergens.map((allergen) => (
               <li className="break-words" key={allergen}>
@@ -720,7 +780,7 @@ export default function RecipeCard({
                 {alternatives[allergen] &&
                   alternatives[allergen].length > 0 && (
                     <span className="block text-gray-700 sm:ml-2 sm:inline">
-                      → Alternativen:{' '}
+                      Alternativen:{' '}
                       {alternatives[allergen].map(capitalize).join(', ')}
                     </span>
                   )}
@@ -753,3 +813,4 @@ export default function RecipeCard({
     </article>
   );
 }
+
