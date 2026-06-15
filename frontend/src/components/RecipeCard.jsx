@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+function capitalize(word) {
+  if (!word) return '';
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function getMatchColor(percent) {
+  if (percent >= 70) return 'bg-green-500';
+  if (percent >= 40) return 'bg-yellow-500';
+  return 'bg-gray-400';
+}
 
 export default function RecipeCard({
   recipe,
@@ -16,30 +27,27 @@ export default function RecipeCard({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentSpeechIndex, setCurrentSpeechIndex] = useState(0);
-  const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
+  const [isRecordingVoiceCommand, setIsRecordingVoiceCommand] = useState(false);
   const [voiceControlMessage, setVoiceControlMessage] = useState('');
 
   const utteranceRef = useRef(null);
   const speechChunksRef = useRef([]);
   const currentSpeechIndexRef = useRef(0);
+  const isPausedRef = useRef(false);
+  const isSpeakingRef = useRef(false);
   const shouldStopSpeechRef = useRef(false);
-  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const voiceCommandTimeoutRef = useRef(null);
 
-  const steps = recipe.zubereitung || recipe.steps || [];
+  const steps = useMemo(
+    () => recipe.zubereitung || recipe.steps || [],
+    [recipe.zubereitung, recipe.steps],
+  );
   const time = recipe.time_minutes || recipe.time;
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
-  function capitalize(word) {
-    if (!word) return '';
-    return word.charAt(0).toUpperCase() + word.slice(1);
-  }
-
-  function getMatchColor(percent) {
-    if (percent >= 70) return 'bg-green-500';
-    if (percent >= 40) return 'bg-yellow-500';
-    return 'bg-gray-400';
-  }
-
-  function getAllergenSpeechText() {
+  const getAllergenSpeechText = useCallback(() => {
     if (!allergens.length) return [];
 
     return [
@@ -52,9 +60,9 @@ export default function RecipeCard({
         return `${capitalize(allergen)}. ${alternativeText}`;
       }),
     ];
-  }
+  }, [allergens, alternatives]);
 
-  function getMissingIngredientsSpeechText() {
+  const getMissingIngredientsSpeechText = useCallback(() => {
     if (!missingIngredients.length) return [];
 
     return [
@@ -62,23 +70,20 @@ export default function RecipeCard({
         ', ',
       )}.`,
     ];
-  }
+  }, [missingIngredients]);
 
-  function buildSpeechChunks() {
+  const buildSpeechChunks = useCallback(() => {
     const titleText = recipe.title ? [`Rezept: ${recipe.title}.`] : [];
     const timeText = time ? [`Zubereitungszeit: ${time} Minuten.`] : [];
     const portionsText = recipe.portionen
       ? [`Portionen: ${recipe.portionen}.`]
       : [];
-
     const ingredientText =
       recipe.ingredients?.length > 0
         ? [`Zutaten: ${recipe.ingredients.join(', ')}.`]
         : [];
-
     const allergenText = getAllergenSpeechText();
     const missingText = getMissingIngredientsSpeechText();
-
     const preparationText =
       steps.length > 0
         ? [
@@ -88,15 +93,15 @@ export default function RecipeCard({
         : [];
 
     if (readMode === 'ingredients') {
-      return [...titleText, ...ingredientText, ...allergenText, ...missingText];
+      return [...ingredientText, ...allergenText, ...missingText];
     }
 
     if (readMode === 'preparation') {
-      return [...titleText, ...preparationText];
+      return preparationText;
     }
 
     if (readMode === 'warnings') {
-      return [...titleText, ...allergenText, ...missingText];
+      return [...allergenText, ...missingText];
     }
 
     return [
@@ -108,22 +113,18 @@ export default function RecipeCard({
       ...missingText,
       ...preparationText,
     ];
-  }
+  }, [
+    readMode,
+    recipe.title,
+    recipe.ingredients,
+    recipe.portionen,
+    steps,
+    time,
+    getAllergenSpeechText,
+    getMissingIngredientsSpeechText,
+  ]);
 
-  const speechChunks = useMemo(
-    () => buildSpeechChunks(),
-    [
-      readMode,
-      recipe.title,
-      recipe.ingredients,
-      recipe.portionen,
-      steps,
-      time,
-      allergens,
-      alternatives,
-      missingIngredients,
-    ],
-  );
+  const speechChunks = useMemo(() => buildSpeechChunks(), [buildSpeechChunks]);
 
   useEffect(() => {
     speechChunksRef.current = speechChunks;
@@ -134,9 +135,17 @@ export default function RecipeCard({
 
     return () => {
       stopReading();
-      stopVoiceControl();
+      stopVoiceCommandRecording({ transcribe: false });
     };
   }, [speechChunks]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+  }, [isSpeaking]);
 
   useEffect(() => {
     setImageUrl(recipe.image || null);
@@ -157,6 +166,8 @@ export default function RecipeCard({
       shouldStopSpeechRef.current = false;
       currentSpeechIndexRef.current = safeIndex;
       setCurrentSpeechIndex(safeIndex);
+      isSpeakingRef.current = true;
+      isPausedRef.current = false;
       setIsSpeaking(true);
       setIsPaused(false);
 
@@ -173,6 +184,8 @@ export default function RecipeCard({
         if (nextIndex < speechChunksRef.current.length) {
           speakChunk(nextIndex);
         } else {
+          isSpeakingRef.current = false;
+          isPausedRef.current = false;
           setIsSpeaking(false);
           setIsPaused(false);
           currentSpeechIndexRef.current = 0;
@@ -181,6 +194,8 @@ export default function RecipeCard({
       };
 
       utterance.onerror = () => {
+        isSpeakingRef.current = false;
+        isPausedRef.current = false;
         setIsSpeaking(false);
         setIsPaused(false);
       };
@@ -191,24 +206,29 @@ export default function RecipeCard({
   }
 
   function startReading() {
-    if (isPaused) {
+    if (isPausedRef.current) {
       window.speechSynthesis.resume();
+      isPausedRef.current = false;
+      isSpeakingRef.current = true;
       setIsPaused(false);
       setIsSpeaking(true);
       return;
     }
 
-    speakChunk(currentSpeechIndex);
+    speakChunk(currentSpeechIndexRef.current);
   }
 
   function pauseReading() {
-    if (!isSpeaking) return;
+    if (!isSpeakingRef.current) return;
     window.speechSynthesis.pause();
+    isPausedRef.current = true;
     setIsPaused(true);
   }
 
   function resumeReading() {
     window.speechSynthesis.resume();
+    isPausedRef.current = false;
+    isSpeakingRef.current = true;
     setIsPaused(false);
     setIsSpeaking(true);
   }
@@ -216,6 +236,8 @@ export default function RecipeCard({
   function stopReading() {
     shouldStopSpeechRef.current = true;
     window.speechSynthesis.cancel();
+    isSpeakingRef.current = false;
+    isPausedRef.current = false;
     setIsSpeaking(false);
     setIsPaused(false);
     currentSpeechIndexRef.current = 0;
@@ -287,51 +309,149 @@ export default function RecipeCard({
     );
   }
 
-  function startVoiceControl() {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  function getSupportedAudioMimeType() {
+    if (!window.MediaRecorder?.isTypeSupported) return '';
 
-    if (!SpeechRecognition) {
+    return (
+      [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+      ].find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) || ''
+    );
+  }
+
+  function getAudioFilename(mimeType) {
+    if (mimeType.includes('mp4')) return 'command.mp4';
+    if (mimeType.includes('ogg')) return 'command.ogg';
+    return 'command.webm';
+  }
+
+  async function transcribeVoiceCommand(audioBlob, filename) {
+    setVoiceControlMessage('Sprachbefehl wird ausgewertet...');
+
+    try {
+      const response = await fetch(`${apiUrl}/api/transcribe-voice-command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': audioBlob.type || 'application/octet-stream',
+          'X-Audio-Filename': filename,
+        },
+        body: audioBlob,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Transkription fehlgeschlagen.');
+      }
+
+      const transcript = data.transcript?.trim();
+
+      if (!transcript) {
+        setVoiceControlMessage('Kein Sprachbefehl erkannt. Bitte erneut versuchen.');
+        return;
+      }
+
+      setVoiceControlMessage(`Erkannter Befehl: ${transcript}`);
+      handleVoiceCommand(transcript);
+    } catch (error) {
+      console.log('Fehler beim Auswerten des Sprachbefehls:', error);
       setVoiceControlMessage(
-        'Sprachbefehle werden in diesem Browser nicht unterstützt. Bitte Chrome oder Edge verwenden.',
+        'Sprachbefehl konnte nicht ausgewertet werden. Bitte erneut versuchen.',
+      );
+    }
+  }
+
+  async function startVoiceCommandRecording() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setVoiceControlMessage(
+        'Sprachbefehle werden in diesem Browser nicht unterstützt.',
       );
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'de-DE';
-    recognition.continuous = true;
-    recognition.interimResults = false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = getSupportedAudioMimeType();
+      const options = mimeType ? { mimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
 
-    recognition.onresult = (event) => {
-      const latestResult = event.results[event.results.length - 1];
-      const transcript = latestResult[0].transcript;
-      setVoiceControlMessage(`Erkannter Befehl: ${transcript}`);
-      handleVoiceCommand(transcript);
-    };
+      audioChunksRef.current = [];
 
-    recognition.onerror = () => {
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        mediaRecorderRef.current = null;
+        setIsRecordingVoiceCommand(false);
+
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorder.mimeType || mimeType || 'audio/webm',
+        });
+
+        audioChunksRef.current = [];
+
+        if (audioBlob.size === 0) {
+          setVoiceControlMessage('Keine Audiodaten erkannt. Bitte erneut versuchen.');
+          return;
+        }
+
+        transcribeVoiceCommand(
+          audioBlob,
+          getAudioFilename(mediaRecorder.mimeType || mimeType),
+        );
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecordingVoiceCommand(true);
+      setVoiceControlMessage('Sprich jetzt deinen Befehl.');
+
+      voiceCommandTimeoutRef.current = window.setTimeout(() => {
+        stopVoiceCommandRecording();
+      }, 5000);
+    } catch (error) {
+      console.log('Fehler beim Starten der Sprachaufnahme:', error);
       setVoiceControlMessage(
-        'Sprachbefehl konnte nicht erkannt werden. Bitte erneut versuchen.',
+        'Mikrofon konnte nicht gestartet werden. Bitte Berechtigung prüfen.',
       );
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setVoiceControlEnabled(true);
-    setVoiceControlMessage(
-      'Sprachbefehle aktiv. Möglich sind: vorlesen, pause, weiter, stopp, zurück, vor.',
-    );
+    }
   }
 
-  function stopVoiceControl() {
-    if (recognitionRef.current) {
-      recognitionRef.current.onend = null;
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
+  function stopVoiceCommandRecording({ transcribe = true } = {}) {
+    if (voiceCommandTimeoutRef.current) {
+      window.clearTimeout(voiceCommandTimeoutRef.current);
+      voiceCommandTimeoutRef.current = null;
     }
 
-    setVoiceControlEnabled(false);
+    const recorder = mediaRecorderRef.current;
+
+    if (!recorder) {
+      setIsRecordingVoiceCommand(false);
+      return;
+    }
+
+    if (!transcribe) {
+      recorder.onstop = () => {
+        recorder.stream.getTracks().forEach((track) => track.stop());
+      };
+      audioChunksRef.current = [];
+    }
+
+    if (recorder.state !== 'inactive') {
+      recorder.stop();
+    }
+
+    if (!transcribe) {
+      mediaRecorderRef.current = null;
+      setIsRecordingVoiceCommand(false);
+    }
   }
 
   async function handleRegenerateImage() {
@@ -340,17 +460,14 @@ export default function RecipeCard({
     setImageFailed(false);
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/regenerate-image`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: recipe.title,
-            ingredients: recipe.ingredients,
-          }),
-        },
-      );
+      const res = await fetch(`${apiUrl}/api/regenerate-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: recipe.title,
+          ingredients: recipe.ingredients,
+        }),
+      });
 
       const data = await res.json();
 
@@ -369,7 +486,7 @@ export default function RecipeCard({
   }
 
   return (
-    <article className="border rounded-lg p-4 shadow-md backdrop-blur-sm relative">
+    <article className="relative overflow-hidden rounded-lg border p-3 shadow-md backdrop-blur-sm sm:p-4">
       <span className="sr-only">
         {matchPercent > 0
           ? `${matchPercent} Prozent Übereinstimmung`
@@ -391,7 +508,7 @@ export default function RecipeCard({
         </div>
       )}
 
-      <div className="relative w-full h-48 mb-3 z-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+      <div className="relative z-0 mb-3 flex h-44 w-full items-center justify-center overflow-hidden rounded-md bg-gray-100 sm:h-48">
         {imageUrl && !imageFailed ? (
           <>
             {!imageLoaded && (
@@ -410,7 +527,7 @@ export default function RecipeCard({
                 setImageLoaded(true);
                 setImageUrl(null);
               }}
-              className={`w-full h-48 object-cover rounded-md transition-opacity duration-300 ${
+              className={`h-44 w-full rounded-md object-cover transition-opacity duration-300 sm:h-48 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             />
@@ -428,13 +545,15 @@ export default function RecipeCard({
         title="Bild für dieses Rezept neu generieren"
         onClick={handleRegenerateImage}
         disabled={regenerating}
-        className={`mt-2 px-4 py-2 rounded font-medium text-white transition-colors ${
+        className={`mt-2 min-h-11 w-full rounded px-4 py-2 font-medium text-white transition-colors sm:w-auto ${
           regenerating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
         {regenerating ? 'Generiere Bild...' : 'Bild generieren'}
       </button>
 
-      <h3 className="text-xl font-semibold mt-3">{recipe.title}</h3>
+      <h3 className="mt-3 break-words text-lg font-semibold leading-snug sm:text-xl">
+        {recipe.title}
+      </h3>
 
       {time && (
         <p className="text-sm text-gray-600 mt-1">
@@ -446,7 +565,7 @@ export default function RecipeCard({
         <p className="text-sm text-gray-600">Portionen: {recipe.portionen}</p>
       )}
 
-      <div className="mt-3 border rounded p-3 bg-gray-50">
+      <div className="mt-3 rounded border bg-gray-50 p-3 sm:p-4">
         <label
           htmlFor={`read-mode-${recipe.title}`}
           className="block font-semibold mb-2">
@@ -457,7 +576,7 @@ export default function RecipeCard({
           id={`read-mode-${recipe.title}`}
           value={readMode}
           onChange={(event) => setReadMode(event.target.value)}
-          className="w-full border rounded p-2 mb-3">
+          className="mb-3 min-h-11 w-full rounded border p-2 text-base">
           <option value="all">Alles vorlesen</option>
           <option value="ingredients">Zutaten und Hinweise vorlesen</option>
           <option value="warnings">
@@ -466,13 +585,13 @@ export default function RecipeCard({
           <option value="preparation">Nur Zubereitung vorlesen</option>
         </select>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
           <button
             type="button"
             onClick={() => jumpReading(-1)}
             title="Zurückspulen"
             aria-label="Zurückspulen"
-            className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+            className="min-h-11 rounded bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700 sm:text-base">
             Zurück
           </button>
 
@@ -481,7 +600,7 @@ export default function RecipeCard({
             onClick={startReading}
             title="Vorlesen starten"
             aria-label="Vorlesen starten"
-            className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+            className="min-h-11 rounded bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-700 sm:text-base">
             Start
           </button>
 
@@ -491,7 +610,11 @@ export default function RecipeCard({
             title="Vorlesen pausieren"
             aria-label="Vorlesen pausieren"
             disabled={!isSpeaking || isPaused}
-            className={`px-3 py-2 text-white rounded ${!isSpeaking || isPaused ? 'bg-gray-400' : 'bg-yellow-500 hover:bg-yellow-600'}`}>
+            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
+              !isSpeaking || isPaused
+                ? 'bg-gray-400'
+                : 'bg-yellow-500 hover:bg-yellow-600'
+            }`}>
             Pause
           </button>
 
@@ -501,7 +624,9 @@ export default function RecipeCard({
             title="Vorlesen fortsetzen"
             aria-label="Vorlesen fortsetzen"
             disabled={!isPaused}
-            className={`px-3 py-2 text-white rounded ${!isPaused ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}>
+            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
+              !isPaused ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+            }`}>
             Weiter
           </button>
 
@@ -511,7 +636,11 @@ export default function RecipeCard({
             title="Vorlesen stoppen"
             aria-label="Vorlesen stoppen"
             disabled={!isSpeaking && !isPaused}
-            className={`px-3 py-2 text-white rounded ${!isSpeaking && !isPaused ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}>
+            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
+              !isSpeaking && !isPaused
+                ? 'bg-gray-400'
+                : 'bg-red-600 hover:bg-red-700'
+            }`}>
             Stopp
           </button>
         </div>
@@ -521,33 +650,39 @@ export default function RecipeCard({
           onClick={() => jumpReading(1)}
           title="Vorspulen"
           aria-label="Vorspulen"
-          className="mt-2 w-full px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+          className="mt-2 min-h-11 w-full rounded bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700 sm:text-base">
           Vorspulen
         </button>
 
-        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-1 items-center gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={voiceControlEnabled ? stopVoiceControl : startVoiceControl}
+            onClick={
+              isRecordingVoiceCommand
+                ? () => stopVoiceCommandRecording()
+                : startVoiceCommandRecording
+            }
             title={
-              voiceControlEnabled
-                ? 'Sprachbefehle deaktivieren'
-                : 'Sprachbefehle aktivieren'
+              isRecordingVoiceCommand
+                ? 'Sprachaufnahme stoppen'
+                : 'Sprachbefehl aufnehmen'
             }
             aria-label={
-              voiceControlEnabled
-                ? 'Sprachbefehle deaktivieren'
-                : 'Sprachbefehle aktivieren'
+              isRecordingVoiceCommand
+                ? 'Sprachaufnahme stoppen'
+                : 'Sprachbefehl aufnehmen'
             }
-            className={`px-3 py-2 text-white rounded ${
-              voiceControlEnabled
+            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
+              isRecordingVoiceCommand
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}>
-            {voiceControlEnabled ? 'Sprachbefehle aus' : 'Sprachbefehle an'}
+            {isRecordingVoiceCommand
+              ? 'Aufnahme stoppen'
+              : 'Sprachbefehl aufnehmen'}
           </button>
 
-          <p className="text-sm text-gray-600" aria-live="polite">
+          <p className="text-sm leading-relaxed text-gray-600" aria-live="polite">
             Sag: vorlesen, pause, weiter, stopp, zurück oder vor.
           </p>
         </div>
@@ -567,22 +702,24 @@ export default function RecipeCard({
       </div>
 
       <h4 className="mt-3 font-bold">Zutaten:</h4>
-      <ul className="list-disc list-inside mt-2">
+      <ul className="mt-2 list-outside list-disc space-y-1 pl-5">
         {recipe.ingredients?.map((ingredient) => (
-          <li key={ingredient}>{ingredient}</li>
+          <li className="break-words" key={ingredient}>
+            {ingredient}
+          </li>
         ))}
       </ul>
 
       {allergens.length > 0 && (
         <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 rounded">
           <h4 className="font-bold text-red-700 mb-1">⚠️ Allergene</h4>
-          <ul className="list-disc list-inside text-red-700">
+          <ul className="list-outside list-disc space-y-1 pl-5 text-red-700">
             {allergens.map((allergen) => (
-              <li key={allergen}>
+              <li className="break-words" key={allergen}>
                 <span className="font-semibold">{capitalize(allergen)}</span>
                 {alternatives[allergen] &&
                   alternatives[allergen].length > 0 && (
-                    <span className="text-gray-700 ml-2">
+                    <span className="block text-gray-700 sm:ml-2 sm:inline">
                       → Alternativen:{' '}
                       {alternatives[allergen].map(capitalize).join(', ')}
                     </span>
@@ -594,7 +731,7 @@ export default function RecipeCard({
       )}
 
       {missingIngredients?.length > 0 && (
-        <div className="mt-2 text-sm text-red-500">
+        <div className="mt-2 break-words text-sm text-red-500">
           Nicht verwendet: {missingIngredients.join(', ')}
         </div>
       )}
@@ -602,10 +739,10 @@ export default function RecipeCard({
       {steps.length > 0 && (
         <>
           <h4 className="mt-4 font-bold">Zubereitung:</h4>
-          <ol className="list-decimal list-inside mt-2 space-y-2">
+          <ol className="mt-2 list-outside list-decimal space-y-2 pl-5">
             {steps.map((step, index) => (
               <li
-                className="leading-relaxed"
+                className="break-words leading-relaxed"
                 key={`${recipe.title}-step-${index}`}>
                 {step}
               </li>

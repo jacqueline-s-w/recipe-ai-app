@@ -5,11 +5,13 @@ import os
 import json
 import base64
 import hashlib
+from io import BytesIO
 import requests
 from groq import Groq
+from openai import OpenAI
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-OAI_API_KEY = os.getenv("OAI_API_KEY")
+OAI_API_KEY = os.getenv("OAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
@@ -94,6 +96,24 @@ def generate_image_from_prompt(prompt: str) -> str | None:
         f.write(image_bytes)
 
     return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
+
+
+def transcribe_audio_command(audio_bytes: bytes, filename: str = "command.webm") -> str:
+    if not OAI_API_KEY:
+        raise RuntimeError("OAI_API_KEY fehlt.")
+
+    audio_file = BytesIO(audio_bytes)
+    audio_file.name = filename
+
+    client = OpenAI(api_key=OAI_API_KEY)
+    transcription = client.audio.transcriptions.create(
+        model="gpt-4o-mini-transcribe",
+        file=audio_file,
+        language="de",
+        prompt="Kurzer Sprachbefehl für eine Rezept-App: vorlesen, pause, weiter, stopp, zurück oder vor.",
+    )
+
+    return transcription.text.strip()
 
 
 def _fallback_recipe(ingredients: list[str]) -> dict:

@@ -60,7 +60,7 @@ export default function IngredientInput({
   ];
 
   return (
-    <section className="bg-white shadow p-4 rounded-xl">
+    <section className="rounded-xl bg-white p-4 shadow sm:p-5">
       <form onSubmit={addIngredients}>
         <label htmlFor="zutat" className="block text-sm font-medium mb-1">
           Zutaten (Komma getrennt):
@@ -70,7 +70,7 @@ export default function IngredientInput({
           id="zutat"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          className="border p-2 rounded w-full"
+          className="min-h-11 w-full rounded border p-2 text-base"
           placeholder="z.B. Tomate, Käse, Basilikum"
         />
 
@@ -78,7 +78,7 @@ export default function IngredientInput({
           type="submit"
           title="Zutaten hinzufügen"
           aria-label="Zutaten hinzufügen"
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded font-medium
+          className="mt-3 min-h-11 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white sm:w-auto
           hover:bg-blue-700 transition-colors
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
           Hinzufügen
@@ -92,16 +92,16 @@ export default function IngredientInput({
               {ingredients.map((ingredient, index) => (
                 <li
                   key={`${ingredient}-${index}`}
-                  className="flex items-center justify-between gap-3 border rounded px-3 py-2">
-                  <span>{ingredient}</span>
+                  className="flex items-center justify-between gap-3 rounded border px-3 py-2">
+                  <span className="min-w-0 break-words">{ingredient}</span>
 
                   <button
                     type="button"
                     title="Zutat löschen"
                     aria-label={`${ingredient} löschen`}
                     onClick={() => removeIngredient(index)}
-                    className="text-red-600 hover:text-red-800 font-bold text-xl leading-none
-                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded">
+                    className="min-h-10 min-w-10 shrink-0 rounded text-xl font-bold leading-none text-red-600 hover:text-red-800
+                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                     ×
                   </button>
                 </li>
@@ -113,7 +113,7 @@ export default function IngredientInput({
               title="Alle Zutaten löschen"
               aria-label="Alle Zutaten löschen"
               onClick={clearAllIngredients}
-              className="mt-3 w-full bg-red-600 text-white px-4 py-2 rounded font-medium
+              className="mt-3 min-h-11 w-full rounded bg-red-600 px-4 py-2 font-medium text-white
               hover:bg-red-700 transition-colors
               focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
               Alle Zutaten löschen
@@ -134,7 +134,7 @@ export default function IngredientInput({
             placeholder="z.B. Zwiebel, Knoblauch, Zucker"
             value={excludeIngredients}
             onChange={(event) => setExcludeIngredients(event.target.value)}
-            className="w-full p-2 border rounded"
+            className="min-h-11 w-full rounded border p-2 text-base"
           />
         </div>
 
@@ -143,9 +143,11 @@ export default function IngredientInput({
             Unverträglichkeiten
           </label>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {intoleranceOptions.map((option) => (
-              <label key={option.value} className="flex items-center gap-2">
+              <label
+                key={option.value}
+                className="flex min-h-10 items-start gap-2">
                 <input
                   type="checkbox"
                   value={option.value}
@@ -161,10 +163,10 @@ export default function IngredientInput({
                       );
                     }
                   }}
-                  className="h-4 w-4"
+                  className="mt-1 h-4 w-4 shrink-0"
                 />
 
-                <span>{option.label}</span>
+                <span className="min-w-0 break-words">{option.label}</span>
               </label>
             ))}
           </div>
@@ -189,7 +191,7 @@ export default function IngredientInput({
           loading || ingredients.length === 0
             ? 'bg-gray-400'
             : 'bg-green-600 hover:bg-green-700'
-        } text-white px-4 py-2 rounded font-medium transition-colors
+        } min-h-11 rounded px-4 py-2 font-medium text-white transition-colors
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
         {loading ? 'Suche...' : 'Rezepte finden'}
       </button>

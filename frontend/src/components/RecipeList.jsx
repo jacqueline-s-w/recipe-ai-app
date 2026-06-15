@@ -14,8 +14,10 @@ export default function RecipeList({ recipes, loading }) {
   }
 
   return (
-    <section className="mt-8 max-w-xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Gefundene Rezepte</h2>
+    <section className="mx-auto mt-8 w-full max-w-2xl">
+      <h2 className="mb-4 text-2xl font-bold leading-tight">
+        Gefundene Rezepte
+      </h2>
 
       <ul className="space-y-4">
         {recipes.map((item) => (

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import Response
 app= FastAPI()
 from fastapi.middleware.cors import CORSMiddleware;
@@ -57,3 +57,22 @@ async def regenerate_image(data: dict):
     image_url = generate_image_from_prompt(image_prompt)
 
     return {"image": image_url}
+
+
+@app.post("/api/transcribe-voice-command")
+async def transcribe_voice_command(request: Request):
+    audio_bytes = await request.body()
+
+    if not audio_bytes:
+        return {"error": "Keine Audiodaten erhalten."}
+
+    filename = request.headers.get("x-audio-filename", "command.webm")
+
+    try:
+        from services.ai_service import transcribe_audio_command
+
+        transcript = transcribe_audio_command(audio_bytes, filename)
+        return {"transcript": transcript}
+    except Exception as error:
+        print("VOICE TRANSCRIPTION ERROR:", error)
+        return {"error": "Sprachbefehl konnte nicht transkribiert werden."}

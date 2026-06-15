@@ -66,8 +66,12 @@ export default function Home() {
   }
 
   return (
-    <div id="main" className="container mx-auto p-4 md:p-6 max-w-3xl">
-      <h1 className="text-4xl font-bold mb-6">AI Recipe Finder 🔍🍽️</h1>
+    <div
+      id="main"
+      className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 md:px-6">
+      <h1 className="mb-6 break-words text-3xl font-bold leading-tight sm:text-4xl">
+        AI Recipe Finder 🔍🍽️
+      </h1>
 
       <IngredientInput
         ingredients={ingredients}
