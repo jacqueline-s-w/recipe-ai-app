@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">AI Recipe Finder Favicon</title>
+  <desc id="desc">A cooking spoon, leaf, and search lens for an AI recipe finder.</desc>
+  <defs>
+    <linearGradient id="background" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16a34a" />
+      <stop offset="0.55" stop-color="#0d9488" />
+      <stop offset="1" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="spoon" x1="20" y1="12" x2="44" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff7ed" />
+      <stop offset="1" stop-color="#fed7aa" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#background)" />
+  <circle cx="31" cy="27" r="16" fill="#ecfeff" opacity="0.95" />
+  <path
+    d="M28.5 13.5c5 0 9 3.7 9 8.4 0 3.5-2.3 6.6-5.6 7.8v19.1c0 2-1.6 3.7-3.7 3.7s-3.7-1.7-3.7-3.7V29.7c-3.3-1.2-5.6-4.3-5.6-7.8 0-4.7 4.1-8.4 9.6-8.4Z"
+    fill="url(#spoon)" />
+  <path
+    d="M36.5 17.8c6.1.8 10.2 4.5 11.8 10.8-6.7 1.8-11.3-.3-13.9-6.2 2.2.4 4 .2 5.6-.8-1.8-.5-3.2-1.7-3.5-3.8Z"
+    fill="#22c55e" />
+  <path
+    d="M41.5 38.5a8.5 8.5 0 1 0-12 12 8.5 8.5 0 0 0 12-12Zm3.1 11.5 7.4 7.4"
+    fill="none"
+    stroke="#0f172a"
+    stroke-linecap="round"
+    stroke-width="4.4" />
+  <circle cx="35.5" cy="44.5" r="5" fill="#ffffff" opacity="0.92" />
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">AI Recipe Finder</title>
+  <desc id="desc">Social preview graphic for an AI-powered recipe search app.</desc>
+  <defs>
+    <linearGradient id="background" x1="94" y1="48" x2="1110" y2="580" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8fafc" />
+      <stop offset="0.48" stop-color="#ecfdf5" />
+      <stop offset="1" stop-color="#dbeafe" />
+    </linearGradient>
+    <linearGradient id="plate" x1="404" y1="126" x2="842" y2="514" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16a34a" />
+      <stop offset="0.55" stop-color="#0d9488" />
+      <stop offset="1" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)" />
+  <circle cx="888" cy="315" r="190" fill="url(#plate)" />
+  <circle cx="888" cy="315" r="138" fill="#f8fafc" opacity="0.96" />
+  <path d="M870 202c48 0 87 35 87 79 0 33-21 61-52 73v93c0 19-15 34-34 34s-34-15-34-34v-93c-32-12-53-40-53-73 0-44 38-79 86-79Z" fill="#fed7aa" />
+  <path d="M946 218c58 7 98 43 112 103-65 18-109-2-134-59 21 4 39 1 54-8-18-5-30-16-32-36Z" fill="#22c55e" />
+  <path d="M313 226h260" stroke="#0f172a" stroke-linecap="round" stroke-width="12" />
+  <path d="M313 302h360" stroke="#0f172a" stroke-linecap="round" stroke-width="12" />
+  <path d="M313 378h308" stroke="#0f172a" stroke-linecap="round" stroke-width="12" />
+  <text x="96" y="180" fill="#0f172a" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="800">AI Recipe Finder</text>
+  <text x="100" y="486" fill="#334155" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="500">Rezepte aus deinen Zutaten, Allergien und Vorlieben.</text>
+</svg>
