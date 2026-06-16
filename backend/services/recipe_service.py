@@ -150,13 +150,25 @@ def fuzzy_match(a: str, b: str) -> bool:
 
 
 def tokens_match(token: str, compare_token: str) -> bool:
-    token_group = expand_synonyms(token)
-    compare_group = expand_synonyms(compare_token)
+    normalized_token = normalize_token(token)
+    normalized_compare_token = normalize_token(compare_token)
+    token_group = expand_synonyms(normalized_token)
+    compare_group = expand_synonyms(normalized_compare_token)
 
     if token_group & compare_group:
         return True
 
-    return fuzzy_match(normalize_token(token), normalize_token(compare_token))
+    if (
+        len(normalized_token) > 3
+        and len(normalized_compare_token) > 3
+        and (
+            normalized_token in normalized_compare_token
+            or normalized_compare_token in normalized_token
+        )
+    ):
+        return True
+
+    return fuzzy_match(normalized_token, normalized_compare_token)
 
 
 def ingredient_matches_tokens(ingredient: str, forbidden_tokens: set[str]) -> bool:
@@ -243,30 +255,28 @@ def get_allergen_alternatives(allergens: list[str]) -> dict[str, list[str]]:
     return {allergen: ALLERGEN_ALTERNATIVES.get(allergen, []) for allergen in allergens}
 
 
-def get_missing_ingredients(recipe_ingredients: list[str], user_tokens: set[str]) -> list[str]:
-    missing_clean = []
+def ingredient_matches_any_token(ingredient: str, compare_tokens: set[str]) -> bool:
+    ingredient_tokens = process_ingredients([ingredient])
 
-    for ingredient in recipe_ingredients:
-        ingredient_tokens = {normalize_token(t) for t in tokenize_ingredient(ingredient)}
-        found = False
+    for ingredient_token in ingredient_tokens:
+        for compare_token in compare_tokens:
+            if tokens_match(ingredient_token, compare_token):
+                return True
 
-        for token in ingredient_tokens:
-            if expand_synonyms(token) & user_tokens:
-                found = True
-                break
+    return False
 
-            for user_token in user_tokens:
-                if len(token) > 2 and len(user_token) > 2 and fuzzy_match(token, user_token):
-                    found = True
-                    break
 
-            if found:
-                break
+def get_unused_user_ingredients(
+    user_ingredients: list[str],
+    recipe_ingredients: list[str],
+) -> list[str]:
+    recipe_tokens = process_ingredients(recipe_ingredients)
 
-        if not found:
-            missing_clean.append(ingredient)
-
-    return missing_clean
+    return [
+        ingredient
+        for ingredient in user_ingredients
+        if not ingredient_matches_any_token(ingredient, recipe_tokens)
+    ]
 
 
 def recipe_contains_excluded(recipe: dict, exclude_tokens: set[str]) -> bool:
@@ -298,8 +308,21 @@ def find_matching_recipes(
     intolerances = intolerances or []
 
     result = []
-    user_tokens = process_ingredients(user_ingredients)
+    problematic_user_ingredients = get_problematic_user_ingredients(
+        user_ingredients,
+        exclude_ingredients,
+        intolerances,
+    )
+    required_user_ingredients = [
+        ingredient
+        for ingredient in user_ingredients
+        if ingredient not in problematic_user_ingredients
+    ]
+    user_tokens = process_ingredients(required_user_ingredients)
     exclude_tokens = process_ingredients(exclude_ingredients)
+
+    if not required_user_ingredients:
+        return []
 
     for recipe in recipes:
         if recipe_contains_excluded(recipe, exclude_tokens):
@@ -316,7 +339,13 @@ def find_matching_recipes(
                 if tokens_match(user_token, recipe_token):
                     matches.add(recipe_token)
 
-        missing_clean = get_missing_ingredients(recipe.get("ingredients", []), user_tokens)
+        unused_required_ingredients = get_unused_user_ingredients(
+            required_user_ingredients,
+            recipe.get("ingredients", []),
+        )
+
+        if unused_required_ingredients:
+            continue
 
         score_user = len(matches) / len(user_tokens) if user_tokens else 0
         score_recipe = len(matches) / len(recipe_tokens) if recipe_tokens else 0
@@ -324,10 +353,6 @@ def find_matching_recipes(
 
         if score_user >= 0.8:
             score += 0.1
-
-        missing_ratio = len(missing_clean) / len(recipe_tokens) if recipe_tokens else 1
-        if missing_ratio > 0.5:
-            score *= 0.8
 
         if len(matches) == 1 and len(user_tokens) >= 3:
             score *= 0.7
@@ -341,7 +366,7 @@ def find_matching_recipes(
             result.append(
                 {
                     "match_percent": percent,
-                    "missing_ingredients": missing_clean,
+                    "missing_ingredients": problematic_user_ingredients,
                     "allergens": allergens,
                     "alternatives": alternatives,
                     "recipe": recipe,
