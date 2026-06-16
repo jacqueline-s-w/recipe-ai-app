@@ -1,90 +1,73 @@
-# AI Recipe Finder 🔍🍽️
+# AI Recipe Finder
 
-Eine KI‑gestützte Rezept‑App, die Zutaten analysiert, Allergene erkennt, Alternativen vorschlägt und automatisch passende oder KI‑generierte Rezepte liefert.
+Eine Rezept-App, die aus eingegebenen Zutaten passende Rezepte findet. Zusätzlich können Zutaten ausgeschlossen, Unverträglichkeiten ausgewählt und optional vegetarische oder vegane Rezepte gefiltert werden.
 
-Die App kombiniert:
+Das Projekt ist als Lern- und Portfolio-Projekt entstanden. Der Fokus liegt auf einer verständlichen React-Oberfläche, einer FastAPI-Backendlogik und dem sinnvollen Einsatz von KI-Funktionen.
 
-- ein **FastAPI‑Backend** (Python)
-- ein **React‑Frontend** (Vite)
-- **AI‑gestützte Rezeptgenerierung**
-- **Allergen‑ und Intoleranz‑Erkennung**
-- **Bildgenerierung**
-- **Barrierefreiheit (A11y)**
+## Live-Demo
 
----
+Frontend: https://recipe-ai-app-frontend.onrender.com/
 
----
+Backend/API: https://recipe-ai-app-pbyc.onrender.com/
 
-## 🚀 Live Demo
+Hinweis: Das Backend läuft auf dem Render Free-Tier. Wenn es länger nicht benutzt wurde, kann der erste Request etwa 50 bis 60 Sekunden dauern.
 
-### 🔗 Frontend
+## Screenshot
 
-https://recipe-ai-app-frontend.onrender.com/
+![Screenshot der Rezept-App](./frontend/public/images/Allergene_Alternativen.png)
 
-### 🔗 Backend (API)
+## Funktionen
 
-https://recipe-ai-app-pbyc.onrender.com/
+- Zutaten eingeben und passende Rezepte finden
+- Eingegebene Zutaten müssen im Rezept vorkommen, außer sie wurden ausgeschlossen oder passen nicht zu einer gewählten Einschränkung
+- Zutaten ausschließen
+- Ernährungsweise auswählen: keine Einschränkung, vegetarisch oder vegan
+- Unverträglichkeiten berücksichtigen, zum Beispiel Gluten, Laktose, Fruktose, Histamin, Soja, Nüsse und tierisches Eiweiß
+- Allergene und mögliche Alternativen anzeigen
+- KI-Rezept generieren, wenn kein passendes Rezept gefunden wird
+- Rezeptbilder generieren oder neu generieren
+- Rezepte vorlesen lassen
+- Sprachbefehle für Vorlesen, Pause, Weiter, Stopp, Zurück und Vor
+- Grundlegende Accessibility-Verbesserungen wie Labels, Fieldsets, Skip-Link, Fokus-Stile und Live-Statusmeldungen
+- Responsive Oberfläche für Desktop und kleinere Bildschirme
 
-**Hinweis:**  
-Das Backend schläft im Free‑Tier nach ca. 15 Minuten Inaktivität ein.  
-Der erste Request kann daher **50–60 Sekunden** dauern.
+## Tech-Stack
 
----
-
-## 📸 Screenshot
-
-![App Screenshot](./frontend/public/images/Allergene_Alternativen.png)
-
----
-
-## ✨ Features
-
-- **Zutaten eingeben** (mehrere, komma‑getrennt)
-- **Zutaten ausschließen**
-- **Intoleranzen auswählen** (Gluten, Laktose, Fruktose, Histamin, Soja, Nüsse, tierisches Eiweiß)
-- **Allergen‑Erkennung** inkl. Alternativen
-- **Fehlende Zutaten** werden automatisch erkannt
-- **Match‑Prozentanzeige**
-- **KI‑Rezepte**, wenn keine passenden gefunden werden
-- **KI‑Bildgenerierung**
-- **Vorlesen‑Funktion** (Text‑to‑Speech)
-- **Barrierefreiheit**: Skip‑Link, Fokus‑Styles, ARIA‑Labels
-- **Responsive UI**
-
----
-
-## 🧠 Technologie‑Stack
-
-### Backend
-
-- Python 3.11
-- FastAPI
-- Uvicorn
-- Eigene Allergen‑ und Intoleranz‑Engine
-- Groq API für KI-Rezeptgenerierung
-- OpenAI Image API für optionale Bildgenerierung
-- difflib (für Fuzzy Matching)
-
-### Frontend
+Frontend:
 
 - React
 - Vite
-- TailwindCSS
+- Tailwind CSS
 - Fetch API
-- Web Spech API
+- Web Speech API für die Vorlesefunktion
 
----
+Backend:
 
-## 🚀 Installation
+- Python
+- FastAPI
+- Uvicorn
+- Eigene Filterlogik für Zutaten, Unverträglichkeiten, vegetarisch und vegan
+- Groq API für KI-Rezepte
+- OpenAI API für optionale Bildgenerierung und Sprachbefehl-Erkennung
 
-### Backend starten
+## Lokal starten
+
+Backend:
 
 ```bash
 cd backend
 uvicorn main:app --reload
 ```
 
-### Frontend
+Optionale Umgebungsvariablen im Backend:
+
+```env
+GROQ_API_KEY=dein_key
+OAI_API_KEY=dein_key
+OPENAI_API_KEY=dein_key
+```
+
+Frontend:
 
 ```bash
 cd frontend
@@ -92,39 +75,54 @@ npm install
 npm run dev
 ```
 
-### Projektstruktur
+Optionale `.env` im Frontend:
 
-```js
-RECIPE-AI-APP/
-│
-├── backend/
-│ ├── main.py
-│ ├── services/
-│ └── ...
-│
-├── frontend/
-│ ├── public/
-│ │ └── images/
-│ ├── src/
-│ │ ├── components/
-│ │ ├── pages/
-│ │ └── App.jsx
-│ └── ...
-│
-└── README.md
+```env
+VITE_API_URL=http://127.0.0.1:8000
 ```
 
-### Geplante Erweiterungen
+## Manueller Testplan
 
-- Benutzeraccounts & Favoriten
+Da ich noch keine Unit-Tests gelernt habe, teste ich die wichtigsten Funktionen aktuell manuell:
 
-- Mehrsprachigkeit (DE/EN)
+- Zutaten `Tomate` und `Basilikum` eingeben: Es sollen nur Rezepte erscheinen, in denen beide Zutaten sinnvoll vorkommen.
+- Zusätzlich `Basilikum` bei ausgeschlossenen Zutaten eintragen: Basilikum darf nicht mehr als Pflichtzutat gelten.
+- Vegan auswählen: Rezepte mit Fleisch, Fisch, Ei, Milch oder normalem Käse sollen nicht erscheinen.
+- Vegetarisch auswählen: Fleisch und Fisch sollen ausgeschlossen werden.
+- `Tomate` eingeben und Histamin auswählen: Tomatenrezepte sollen wegen der Unverträglichkeit nicht vorgeschlagen werden.
+- Vorlesen starten, `Pause` sagen und danach `Weiter`: Die Wiedergabe soll pausiert bleiben, bis wirklich weitergesprochen wird.
+- Tastatur-Navigation prüfen: Formularelemente, Buttons und Rezeptkarten müssen erreichbar und sichtbar fokussiert sein.
+- Bildgenerierung testen: Bei Fehlern soll eine verständliche Meldung statt eines kaputten Bildes erscheinen.
 
-- Export als PDF
+## Accessibility
 
-- KI‑Modelle für Bilder & Rezepte
+Die App enthält mehrere Accessibility-Grundlagen, zum Beispiel:
 
-## 📄 Lizenz
+- sichtbare Labels für Eingabefelder
+- gruppierte Radio-Buttons und Checkboxen
+- Skip-Link zum Hauptinhalt
+- Fokus-Stile für Tastaturbedienung
+- Statusmeldungen mit `aria-live`
+- Alternativtexte für Bilder
 
-Dieses Projekt steht unter der MIT-Lizenz.  
-Siehe die Datei `LICENSE` für weitere Details.
+Ich würde das Projekt nicht als vollständig WCAG-zertifiziert bezeichnen. Für ein Bewerbungsprojekt ist aber gut erklärbar, welche Accessibility-Punkte bereits umgesetzt wurden und welche man mit mehr Erfahrung noch weiter prüfen würde.
+
+## Aktuelle Grenzen
+
+- Es gibt noch keine Benutzeraccounts oder Favoriten.
+- Die Sprachbefehle brauchen Mikrofonzugriff und eine funktionierende Backend-Konfiguration für Transkription.
+- Auf Render kann die App beim ersten Laden langsam reagieren.
+- Es gibt noch keine automatisierten Unit-Tests. Stattdessen gibt es einen manuellen Testplan, den ich Schritt für Schritt erklären kann.
+
+## Was ich dabei gelernt habe
+
+- React-Komponenten strukturieren
+- Formulardaten ans Backend senden
+- Backend-Filterlogik mit FastAPI umsetzen
+- KI-Funktionen sinnvoll in eine App integrieren
+- Grundlegende Accessibility und UX verbessern
+- Fehlerfälle verständlicher für Nutzerinnen und Nutzer anzeigen
+
+## Lizenz
+
+MIT

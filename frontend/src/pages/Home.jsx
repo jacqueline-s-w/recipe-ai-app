@@ -56,7 +56,7 @@ export default function Home() {
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(
-          errorData?.detail || 'Die Rezeptsuche ist fehlgeschlagen.',
+          errorData.detail || 'Die Rezeptsuche ist fehlgeschlagen.',
         );
       }
 
@@ -72,8 +72,9 @@ export default function Home() {
   }
 
   return (
-    <div
+    <main
       id="main"
+      tabIndex={-1}
       className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 md:px-6">
       <h1 className="mb-6 break-words text-3xl font-bold leading-tight sm:text-4xl">
         AI Recipe Finder
@@ -97,6 +98,6 @@ export default function Home() {
       )}
 
       <RecipeList recipes={recipes} loading={loading} />
-    </div>
+    </main>
   );
 }

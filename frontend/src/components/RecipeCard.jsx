@@ -1,5 +1,9 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import RecipeImage from './RecipeImage';
+import RecipeSpeechControls from './RecipeSpeechControls';
+import RecipeWarnings from './RecipeWarnings';
+
 function capitalize(word) {
   if (!word) return '';
   return word.charAt(0).toUpperCase() + word.slice(1);
@@ -596,48 +600,20 @@ export default function RecipeCard({
         </div>
       )}
 
-      <div className="relative z-0 mb-3 flex h-44 w-full items-center justify-center overflow-hidden rounded-md bg-gray-100 sm:h-48">
-        {imageUrl && !imageFailed ? (
-          <>
-            {!imageLoaded && (
-              <div
-                className="absolute inset-0 bg-gray-200"
-                aria-hidden="true"
-              />
-            )}
-
-            <img
-              src={imageUrl}
-              alt={`Rezeptbild: ${recipe.title}`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                setImageFailed(true);
-                setImageLoaded(true);
-                setImageUrl(null);
-              }}
-              className={`h-44 w-full rounded-md object-cover transition-opacity duration-300 sm:h-48 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
-          </>
-        ) : (
-          <div className="px-4 text-center text-sm text-gray-600">
-            Für dieses KI-Rezept wurde noch kein Bild generiert.
-          </div>
-        )}
-      </div>
-
-      <button
-        type="button"
-        aria-label="Bild für dieses Rezept neu generieren"
-        title="Bild für dieses Rezept neu generieren"
-        onClick={handleRegenerateImage}
-        disabled={regenerating}
-        className={`mt-2 min-h-11 w-full rounded px-4 py-2 font-medium text-white transition-colors sm:w-auto ${
-          regenerating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
-        {regenerating ? 'Generiere Bild...' : 'Bild generieren'}
-      </button>
+      <RecipeImage
+        imageUrl={imageUrl}
+        imageLoaded={imageLoaded}
+        imageFailed={imageFailed}
+        regenerating={regenerating}
+        recipeTitle={recipe.title}
+        onImageLoad={() => setImageLoaded(true)}
+        onImageError={() => {
+          setImageFailed(true);
+          setImageLoaded(true);
+          setImageUrl(null);
+        }}
+        onRegenerateImage={handleRegenerateImage}
+      />
 
       <h3 className="mt-3 break-words text-lg font-semibold leading-snug sm:text-xl">
         {recipe.title}
@@ -653,139 +629,26 @@ export default function RecipeCard({
         <p className="text-sm text-gray-600">Portionen: {recipe.portionen}</p>
       )}
 
-      <div className="mt-3 rounded border bg-gray-50 p-3 sm:p-4">
-        <label
-          htmlFor={`read-mode-${recipe.title}`}
-          className="mb-2 block font-semibold">
-          Vorlesen:
-        </label>
-
-        <select
-          id={`read-mode-${recipe.title}`}
-          value={readMode}
-          onChange={(event) => setReadMode(event.target.value)}
-          className="mb-3 min-h-11 w-full rounded border p-2 text-base">
-          <option value="all">Alles vorlesen</option>
-          <option value="ingredients">Zutaten und Hinweise vorlesen</option>
-          <option value="warnings">
-            Nur Allergene und fehlende Zutaten vorlesen
-          </option>
-          <option value="preparation">Nur Zubereitung vorlesen</option>
-        </select>
-
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-          <button
-            type="button"
-            onClick={() => jumpReading(-1)}
-            title="Zurückspulen"
-            aria-label="Zurückspulen"
-            className="min-h-11 rounded bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700 sm:text-base">
-            Zurück
-          </button>
-
-          <button
-            type="button"
-            onClick={startReading}
-            title="Vorlesen starten"
-            aria-label="Vorlesen starten"
-            className="min-h-11 rounded bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-700 sm:text-base">
-            Start
-          </button>
-
-          <button
-            type="button"
-            onClick={pauseReading}
-            title="Vorlesen pausieren"
-            aria-label="Vorlesen pausieren"
-            disabled={!isSpeaking || isPaused}
-            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
-              !isSpeaking || isPaused
-                ? 'bg-gray-400'
-                : 'bg-yellow-500 hover:bg-yellow-600'
-            }`}>
-            Pause
-          </button>
-
-          <button
-            type="button"
-            onClick={resumeReading}
-            title="Vorlesen fortsetzen"
-            aria-label="Vorlesen fortsetzen"
-            disabled={!isPaused}
-            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
-              !isPaused ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-            }`}>
-            Weiter
-          </button>
-
-          <button
-            type="button"
-            onClick={stopReading}
-            title="Vorlesen stoppen"
-            aria-label="Vorlesen stoppen"
-            disabled={!isSpeaking && !isPaused}
-            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
-              !isSpeaking && !isPaused
-                ? 'bg-gray-400'
-                : 'bg-red-600 hover:bg-red-700'
-            }`}>
-            Stopp
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => jumpReading(1)}
-          title="Vorspulen"
-          aria-label="Vorspulen"
-          className="mt-2 min-h-11 w-full rounded bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700 sm:text-base">
-          Vorspulen
-        </button>
-
-        <div className="mt-2 grid grid-cols-1 items-center gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={voiceControlEnabled ? stopVoiceControl : startVoiceControl}
-            title={
-              voiceControlEnabled
-                ? 'Sprachbefehle deaktivieren'
-                : 'Sprachbefehle aktivieren'
-            }
-            aria-label={
-              voiceControlEnabled
-                ? 'Sprachbefehle deaktivieren'
-                : 'Sprachbefehle aktivieren'
-            }
-            className={`min-h-11 rounded px-3 py-2 text-sm text-white sm:text-base ${
-              voiceControlEnabled
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}>
-            {voiceControlEnabled
-              ? isRecordingVoiceCommand
-                ? 'Hört zu...'
-                : 'Sprachbefehle ausschalten'
-              : 'Sprachbefehle an'}
-          </button>
-
-          <p className="text-sm leading-relaxed text-gray-600" aria-live="polite">
-            Sag: vorlesen, pause, weiter, stopp, zurück oder vor.
-          </p>
-        </div>
-
-        {voiceControlMessage && (
-          <p className="mt-2 text-sm text-gray-600" aria-live="polite">
-            {voiceControlMessage}
-          </p>
-        )}
-
-        {(isSpeaking || isPaused) && (
-          <p className="mt-2 text-sm text-gray-600" aria-live="polite">
-            Abschnitt {currentSpeechIndex + 1} von {speechChunks.length}
-            {isPaused ? ' pausiert' : ' wird vorgelesen'}
-          </p>
-        )}
-      </div>
+      <RecipeSpeechControls
+        currentSpeechIndex={currentSpeechIndex}
+        isPaused={isPaused}
+        isRecordingVoiceCommand={isRecordingVoiceCommand}
+        isSpeaking={isSpeaking}
+        onJumpReading={jumpReading}
+        onPauseReading={pauseReading}
+        onReadModeChange={setReadMode}
+        onResumeReading={resumeReading}
+        onStartReading={startReading}
+        onStopReading={stopReading}
+        onToggleVoiceControl={
+          voiceControlEnabled ? stopVoiceControl : startVoiceControl
+        }
+        readMode={readMode}
+        readModeId={`read-mode-${recipe.title}`}
+        speechChunkCount={speechChunks.length}
+        voiceControlEnabled={voiceControlEnabled}
+        voiceControlMessage={voiceControlMessage}
+      />
 
       <h4 className="mt-3 font-bold">Zutaten:</h4>
       <ul className="mt-2 list-outside list-disc space-y-1 pl-5">
@@ -796,31 +659,12 @@ export default function RecipeCard({
         ))}
       </ul>
 
-      {allergens.length > 0 && (
-        <div className="mt-4 rounded border-l-4 border-red-500 bg-red-100 p-3">
-          <h4 className="mb-1 font-bold text-red-700">Allergene</h4>
-          <ul className="list-outside list-disc space-y-1 pl-5 text-red-700">
-            {allergens.map((allergen) => (
-              <li className="break-words" key={allergen}>
-                <span className="font-semibold">{capitalize(allergen)}</span>
-                {alternatives[allergen] &&
-                  alternatives[allergen].length > 0 && (
-                    <span className="block text-gray-700 sm:ml-2 sm:inline">
-                      Alternativen:{' '}
-                      {alternatives[allergen].map(capitalize).join(', ')}
-                    </span>
-                  )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {missingIngredients?.length > 0 && (
-        <div className="mt-2 break-words text-sm text-red-500">
-          Nicht verwendet: {missingIngredients.join(', ')}
-        </div>
-      )}
+      <RecipeWarnings
+        allergens={allergens}
+        alternatives={alternatives}
+        missingIngredients={missingIngredients}
+        onCapitalize={capitalize}
+      />
 
       {steps.length > 0 && (
         <>
@@ -839,4 +683,5 @@ export default function RecipeCard({
     </article>
   );
 }
+
 
