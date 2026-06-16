@@ -1,4 +1,4 @@
-from services.ai_service import generate_recipe_with_ai
+﻿from services.ai_service import generate_recipe_with_ai
 
 import re
 from difflib import SequenceMatcher
@@ -80,6 +80,39 @@ INTOLERANCE_MAP = {
     "nuesse": ["nuss", "nüsse", "nuesse", "haselnuss", "walnuss", "cashew", "erdnuss"],
 }
 
+VEGETARIAN_FORBIDDEN = [
+    "fleisch",
+    "hackfleisch",
+    "rind",
+    "rindfleisch",
+    "schwein",
+    "schweinefleisch",
+    "speck",
+    "schinken",
+    "haehnchen",
+    "huehnchen",
+    "huhn",
+    "chicken",
+    "fisch",
+    "lachs",
+    "thunfisch",
+    "garnelen",
+    "meeresfruechte",
+]
+
+VEGAN_FORBIDDEN = VEGETARIAN_FORBIDDEN + [
+    "ei",
+    "eier",
+    "milch",
+    "sahne",
+    "rahm",
+    "kaese",
+    "butter",
+    "joghurt",
+    "honig",
+    "gelatine",
+]
+
 
 def normalize_token(token: str) -> str:
     token = token.lower().strip()
@@ -88,6 +121,10 @@ def normalize_token(token: str) -> str:
         .replace("ö", "oe")
         .replace("ü", "ue")
         .replace("ß", "ss")
+        .replace("Ã¤", "ae")
+        .replace("Ã¶", "oe")
+        .replace("Ã¼", "ue")
+        .replace("ÃŸ", "ss")
     )
 
     endings = ["en", "er", "n", "e", "s"]
@@ -97,7 +134,6 @@ def normalize_token(token: str) -> str:
             break
 
     return token
-
 
 def expand_synonyms(token: str) -> set[str]:
     expanded = {normalize_token(token)}
@@ -192,14 +228,26 @@ def get_forbidden_tokens_for_intolerances(intolerances: list[str]) -> set[str]:
     return forbidden_tokens
 
 
+def get_forbidden_tokens_for_diet(dietary_preference: str) -> set[str]:
+    if dietary_preference == "vegan":
+        return {normalize_token(item) for item in VEGAN_FORBIDDEN}
+
+    if dietary_preference == "vegetarian":
+        return {normalize_token(item) for item in VEGETARIAN_FORBIDDEN}
+
+    return set()
+
+
 def get_problematic_user_ingredients(
     user_ingredients: list[str],
     exclude_ingredients: list[str],
     intolerances: list[str],
+    dietary_preference: str = "",
 ) -> list[str]:
     exclude_tokens = process_ingredients(exclude_ingredients)
     forbidden_tokens = get_forbidden_tokens_for_intolerances(intolerances)
-    blocked_tokens = exclude_tokens | forbidden_tokens
+    diet_tokens = get_forbidden_tokens_for_diet(dietary_preference)
+    blocked_tokens = exclude_tokens | forbidden_tokens | diet_tokens
 
     if not blocked_tokens:
         return []
@@ -207,7 +255,8 @@ def get_problematic_user_ingredients(
     return [
         ingredient
         for ingredient in user_ingredients
-        if ingredient_matches_tokens(ingredient, blocked_tokens)
+        if not is_plant_based_replacement(ingredient)
+        and ingredient_matches_tokens(ingredient, blocked_tokens)
     ]
 
 
@@ -215,9 +264,15 @@ def get_safe_user_ingredients(
     user_ingredients: list[str],
     exclude_ingredients: list[str],
     intolerances: list[str],
+    dietary_preference: str = "",
 ) -> list[str]:
     problematic = set(
-        get_problematic_user_ingredients(user_ingredients, exclude_ingredients, intolerances)
+        get_problematic_user_ingredients(
+            user_ingredients,
+            exclude_ingredients,
+            intolerances,
+            dietary_preference,
+        )
     )
 
     safe_ingredients = [
@@ -298,20 +353,54 @@ def violates_intolerance(recipe: dict, intolerances: list[str]) -> bool:
     return False
 
 
+def is_plant_based_replacement(ingredient: str) -> bool:
+    normalized_ingredient = normalize_token(ingredient)
+    return any(
+        marker in normalized_ingredient
+        for marker in [
+            "vegan",
+            "pflanzlich",
+            "pflanzen",
+            "ersatz",
+            "hafermilch",
+            "mandelmilch",
+        ]
+    )
+
+
+def violates_dietary_preference(recipe: dict, dietary_preference: str) -> bool:
+    forbidden_tokens = get_forbidden_tokens_for_diet(dietary_preference)
+
+    if not forbidden_tokens:
+        return False
+
+    for ingredient in recipe.get("ingredients", []):
+        if is_plant_based_replacement(ingredient):
+            continue
+
+        if ingredient_matches_tokens(ingredient, forbidden_tokens):
+            return True
+
+    return False
+
+
 def find_matching_recipes(
     user_ingredients: list[str],
     recipes: list[dict],
     exclude_ingredients: list[str] | None = None,
     intolerances: list[str] | None = None,
+    dietary_preference: str = "",
 ) -> list[dict]:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
+    dietary_preference = dietary_preference or ""
 
     result = []
     problematic_user_ingredients = get_problematic_user_ingredients(
         user_ingredients,
         exclude_ingredients,
         intolerances,
+        dietary_preference,
     )
     required_user_ingredients = [
         ingredient
@@ -329,6 +418,9 @@ def find_matching_recipes(
             continue
 
         if violates_intolerance(recipe, intolerances):
+            continue
+
+        if violates_dietary_preference(recipe, dietary_preference):
             continue
 
         recipe_tokens = process_ingredients(recipe.get("ingredients", []))
@@ -382,15 +474,18 @@ def get_recipes_with_fallback(
     recipes: list[dict],
     exclude_ingredients: list[str] | None = None,
     intolerances: list[str] | None = None,
+    dietary_preference: str = "",
 ) -> list[dict]:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
+    dietary_preference = dietary_preference or ""
 
     matches = find_matching_recipes(
         user_ingredients,
         recipes,
         exclude_ingredients=exclude_ingredients,
         intolerances=intolerances,
+        dietary_preference=dietary_preference,
     )
 
     if matches:
@@ -400,17 +495,20 @@ def get_recipes_with_fallback(
         user_ingredients,
         exclude_ingredients,
         intolerances,
+        dietary_preference,
     )
     safe_user_ingredients = get_safe_user_ingredients(
         user_ingredients,
         exclude_ingredients,
         intolerances,
+        dietary_preference,
     )
 
     ai_recipe = generate_recipe_with_ai(
         safe_user_ingredients,
         exclude_ingredients=exclude_ingredients + problematic_user_ingredients,
         intolerances=intolerances,
+        dietary_preference=dietary_preference,
     )
 
     allergens = detect_allergens(ai_recipe.get("ingredients", []))
@@ -425,3 +523,4 @@ def get_recipes_with_fallback(
             "recipe": ai_recipe,
         }
     ]
+

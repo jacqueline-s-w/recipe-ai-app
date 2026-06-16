@@ -11,6 +11,7 @@ class IngredientsRequest(BaseModel):
     ingredients: list[str]
     exclude_ingredients: list[str] = []
     intolerances: list[str] = []
+    dietary_preference: str = ""
 
 
 @router.post("/recipes")
@@ -32,6 +33,7 @@ def get_recipes(request: IngredientsRequest):
         recipes,
         exclude_ingredients=request.exclude_ingredients,
         intolerances=request.intolerances,
+        dietary_preference=request.dietary_preference,
     )
 
     return {"recipes": matching_recipes}

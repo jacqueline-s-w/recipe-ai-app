@@ -9,6 +9,7 @@ export default function IngredientInput({
 }) {
   const [input, setInput] = useState('');
   const [excludeIngredients, setExcludeIngredients] = useState('');
+  const [dietaryPreference, setDietaryPreference] = useState('');
   const [intolerances, setIntolerances] = useState([]);
 
   function addIngredients(event) {
@@ -49,6 +50,12 @@ export default function IngredientInput({
     onClearResults();
   }
 
+  const dietaryOptions = [
+    { value: '', label: 'Keine Einschränkung' },
+    { value: 'vegetarian', label: 'Vegetarisch' },
+    { value: 'vegan', label: 'Vegan' },
+  ];
+
   const intoleranceOptions = [
     { value: 'gluten', label: 'Gluten' },
     { value: 'laktose', label: 'Laktose' },
@@ -62,7 +69,7 @@ export default function IngredientInput({
   return (
     <section className="rounded-xl bg-white p-4 shadow sm:p-5">
       <form onSubmit={addIngredients}>
-        <label htmlFor="zutat" className="block text-sm font-medium mb-1">
+        <label htmlFor="zutat" className="mb-1 block text-sm font-medium">
           Zutaten (Komma getrennt):
         </label>
 
@@ -78,15 +85,13 @@ export default function IngredientInput({
           type="submit"
           title="Zutaten hinzufügen"
           aria-label="Zutaten hinzufügen"
-          className="mt-3 min-h-11 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white sm:w-auto
-          hover:bg-blue-700 transition-colors
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+          className="mt-3 min-h-11 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto">
           Hinzufügen
         </button>
 
         {ingredients.length > 0 && (
           <div className="mt-4">
-            <h2 className="font-semibold mb-2">Hinzugefügte Zutaten:</h2>
+            <h2 className="mb-2 font-semibold">Hinzugefügte Zutaten:</h2>
 
             <ul className="space-y-2">
               {ingredients.map((ingredient, index) => (
@@ -100,8 +105,7 @@ export default function IngredientInput({
                     title="Zutat löschen"
                     aria-label={`${ingredient} löschen`}
                     onClick={() => removeIngredient(index)}
-                    className="min-h-10 min-w-10 shrink-0 rounded text-xl font-bold leading-none text-red-600 hover:text-red-800
-                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    className="min-h-10 min-w-10 shrink-0 rounded text-xl font-bold leading-none text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                     ×
                   </button>
                 </li>
@@ -113,9 +117,7 @@ export default function IngredientInput({
               title="Alle Zutaten löschen"
               aria-label="Alle Zutaten löschen"
               onClick={clearAllIngredients}
-              className="mt-3 min-h-11 w-full rounded bg-red-600 px-4 py-2 font-medium text-white
-              hover:bg-red-700 transition-colors
-              focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+              className="mt-3 min-h-11 w-full rounded bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
               Alle Zutaten löschen
             </button>
           </div>
@@ -124,7 +126,7 @@ export default function IngredientInput({
         <div className="mt-4">
           <label
             htmlFor="ausgeschlossene-zutat"
-            className="block font-semibold mb-1">
+            className="mb-1 block font-semibold">
             Zutaten ausschließen
           </label>
 
@@ -138,10 +140,31 @@ export default function IngredientInput({
           />
         </div>
 
-        <div className="mt-4">
-          <label className="block font-semibold mb-1">
-            Unverträglichkeiten
-          </label>
+        <fieldset className="mt-4">
+          <legend className="mb-1 font-semibold">Ernährungsweise</legend>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {dietaryOptions.map((option) => (
+              <label
+                key={option.value || 'none'}
+                className="flex min-h-10 items-start gap-2">
+                <input
+                  type="radio"
+                  name="dietary-preference"
+                  value={option.value}
+                  checked={dietaryPreference === option.value}
+                  onChange={(event) => setDietaryPreference(event.target.value)}
+                  className="mt-1 h-4 w-4 shrink-0"
+                />
+
+                <span className="min-w-0 break-words">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-4">
+          <legend className="mb-1 font-semibold">Unverträglichkeiten</legend>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {intoleranceOptions.map((option) => (
@@ -170,7 +193,7 @@ export default function IngredientInput({
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
       </form>
 
       <button
@@ -184,15 +207,15 @@ export default function IngredientInput({
               .map((ingredient) => ingredient.trim())
               .filter(Boolean),
             intolerances,
+            dietaryPreference,
           )
         }
         disabled={loading || ingredients.length === 0}
-        className={`mt-4 w-full ${
+        className={`mt-4 min-h-11 w-full rounded px-4 py-2 font-medium text-white transition-colors ${
           loading || ingredients.length === 0
             ? 'bg-gray-400'
             : 'bg-green-600 hover:bg-green-700'
-        } min-h-11 rounded px-4 py-2 font-medium text-white transition-colors
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
+        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
         {loading ? 'Suche...' : 'Rezepte finden'}
       </button>
     </section>

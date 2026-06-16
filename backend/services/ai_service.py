@@ -24,15 +24,18 @@ def get_cache_key(
     ingredients: list[str],
     exclude_ingredients: list[str] | None = None,
     intolerances: list[str] | None = None,
+    dietary_preference: str = "",
 ) -> str:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
+    dietary_preference = dietary_preference or ""
 
     key_data = {
         "version": CACHE_VERSION,
         "ingredients": sorted(i.strip().lower() for i in ingredients if i.strip()),
         "exclude_ingredients": sorted(i.strip().lower() for i in exclude_ingredients if i.strip()),
         "intolerances": sorted(i.strip().lower() for i in intolerances if i.strip()),
+        "dietary_preference": dietary_preference.strip().lower(),
     }
 
     return hashlib.md5(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
@@ -141,13 +144,20 @@ def generate_recipe_with_ai(
     ingredients: list[str],
     exclude_ingredients: list[str] | None = None,
     intolerances: list[str] | None = None,
+    dietary_preference: str = "",
 ) -> dict:
     exclude_ingredients = exclude_ingredients or []
     intolerances = intolerances or []
+    dietary_preference = dietary_preference or ""
 
     cleaned_ingredients = [ingredient.strip() for ingredient in ingredients if ingredient.strip()]
 
-    cache_key = get_cache_key(cleaned_ingredients, exclude_ingredients, intolerances)
+    cache_key = get_cache_key(
+        cleaned_ingredients,
+        exclude_ingredients,
+        intolerances,
+        dietary_preference,
+    )
     cache_file = f"{CACHE_DIR}/{cache_key}.json"
 
     if os.path.exists(cache_file):
@@ -158,6 +168,22 @@ def generate_recipe_with_ai(
     ingredients_text = ", ".join(cleaned_ingredients)
     exclude_text = ", ".join(exclude_ingredients) if exclude_ingredients else "keine"
     intolerances_text = ", ".join(intolerances) if intolerances else "keine"
+    dietary_text = {
+        "vegetarian": "vegetarisch",
+        "vegan": "vegan",
+    }.get(dietary_preference, "keine Einschränkung")
+    dietary_rule = {
+        "vegetarian": "- Das Rezept muss vegetarisch sein: Verwende kein Fleisch, keinen Fisch und keine Meeresfrüchte.",
+        "vegan": "- Das Rezept muss vegan sein: Verwende keine tierischen Produkte, also kein Fleisch, keinen Fisch, keine Eier, keine Milchprodukte, keinen Honig und keine Gelatine.",
+    }.get(
+        dietary_preference,
+        "- Wenn Fleisch, Fisch, Ei oder Milchprodukte eingegeben wurden, darf das Rezept diese Zutaten enthalten, solange keine Unverträglichkeit dagegen spricht.",
+    )
+    automatic_vegan_rule = (
+        "- Erstelle nicht automatisch ein veganes Rezept."
+        if not dietary_preference
+        else ""
+    )
 
     system_prompt = "Du bist ein Rezeptgenerator. Gib ausschließlich gültiges JSON zurück."
 
@@ -173,13 +199,16 @@ Diese Zutaten dürfen nicht verwendet werden:
 Diese Unverträglichkeiten müssen berücksichtigt werden:
 {intolerances_text}
 
+Ernährungsweise:
+{dietary_text}
+
 Wichtige Regeln:
 - Verwende die Pflicht-Zutaten sinnvoll.
 - Wenn eine Pflicht-Zutat wegen Unverträglichkeit oder Ausschluss nicht geeignet ist, verwende sie nicht und ersetze sie passend.
 - Verwende keine ausgeschlossenen Zutaten.
 - Bei Histamin keine Tomaten, kein Spinat, keine Avocado, keine Aubergine, keine Kichererbsen, keine Sojasauce, keinen Essig und keinen Wein verwenden.
-- Wenn Fleisch, Fisch, Ei oder Milchprodukte eingegeben wurden, darf das Rezept diese Zutaten enthalten, solange keine Unverträglichkeit dagegen spricht.
-- Erstelle nicht automatisch ein veganes Rezept.
+{dietary_rule}
+{automatic_vegan_rule}
 - Gib eine realistische Zubereitungszeit in Minuten an.
 - Gib ausschließlich dieses JSON-Format zurück:
 

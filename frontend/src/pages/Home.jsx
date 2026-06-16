@@ -27,7 +27,12 @@ export default function Home() {
     setError('');
   }
 
-  async function findRecipes(ingredients, excludeIngredients, intolerances) {
+  async function findRecipes(
+    ingredients,
+    excludeIngredients,
+    intolerances,
+    dietaryPreference,
+  ) {
     if (ingredients.length === 0) {
       setError('Bitte gib mindestens eine Zutat ein.');
       return;
@@ -44,6 +49,7 @@ export default function Home() {
           ingredients,
           exclude_ingredients: excludeIngredients,
           intolerances,
+          dietary_preference: dietaryPreference,
         }),
       });
 
@@ -70,7 +76,7 @@ export default function Home() {
       id="main"
       className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-4 md:px-6">
       <h1 className="mb-6 break-words text-3xl font-bold leading-tight sm:text-4xl">
-        AI Recipe Finder 🔍🍽️
+        AI Recipe Finder
       </h1>
 
       <IngredientInput
@@ -81,7 +87,7 @@ export default function Home() {
         loading={loading}
       />
 
-      {error && <p className="text-red-600 mt-4 font-medium">{error}</p>}
+      {error && <p className="mt-4 font-medium text-red-600">{error}</p>}
 
       {loading && (
         <p className="mt-4 text-gray-600" role="status" aria-live="polite">
