@@ -113,7 +113,11 @@ def transcribe_audio_command(audio_bytes: bytes, filename: str = "command.webm")
         model="gpt-4o-mini-transcribe",
         file=audio_file,
         language="de",
-        prompt="Kurzer Sprachbefehl für eine Rezept-App: vorlesen, pause, weiter, stopp, zurück oder vor.",
+        prompt=(
+            "Transkribiere nur klar gesprochene deutsche Sprachbefehle für eine "
+            "Rezept-App. Mögliche Befehle sind: vorlesen, pause, weiter, stopp, "
+            "zurück, vor. Erfinde keinen Befehl bei Stille oder undeutlicher Sprache."
+        ),
     )
 
     return transcription.text.strip()

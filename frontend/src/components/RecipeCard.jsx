@@ -268,6 +268,32 @@ export default function RecipeCard({
   function handleVoiceCommand(command) {
     const normalizedCommand = normalizeCommand(command);
 
+    if (isPausedRef.current) {
+      if (
+        normalizedCommand === 'weiter' ||
+        normalizedCommand.includes('weiterlesen') ||
+        normalizedCommand.includes('fortsetzen') ||
+        normalizedCommand.includes('fortfahren')
+      ) {
+        resumeReading();
+        return true;
+      }
+
+      if (
+        normalizedCommand.includes('stopp') ||
+        normalizedCommand.includes('stop') ||
+        normalizedCommand.includes('beenden')
+      ) {
+        stopReading();
+        return true;
+      }
+
+      setVoiceControlMessage(
+        'Pausiert. Sag weiter, um das Vorlesen fortzusetzen.',
+      );
+      return false;
+    }
+
     if (
       normalizedCommand.includes('vorlesen') ||
       normalizedCommand.includes('start') ||
