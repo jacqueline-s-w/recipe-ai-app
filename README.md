@@ -20,7 +20,7 @@ Eingabe mit Zutaten, ausgeschlossener Zutat, Ernährungsweise und Unverträglich
 
 Gefundenes Rezept mit Allergenen, Alternativen und nicht verwendeter Zutat:
 
-![Screenshot eines gefundenen veganen Rezepts](./frontend/public/images/zutaten-diet-ausschluss-unvertraeglichkeiten-ergebnis.png)
+![Screenshot eines gefundenen veganen Rezepts](./frontend/public/images/suchergebnis.png)
 
 ## Funktionen
 
