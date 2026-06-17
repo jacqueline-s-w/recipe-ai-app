@@ -12,9 +12,15 @@ Backend/API: https://recipe-ai-app-pbyc.onrender.com/
 
 Hinweis: Das Backend läuft auf dem Render Free-Tier. Wenn es länger nicht benutzt wurde, kann der erste Request etwa 50 bis 60 Sekunden dauern.
 
-## Screenshot
+## Screenshots
 
-![Screenshot der Rezept-App](./frontend/public/images/Allergene_Alternativen.png)
+Eingabe mit Zutaten, ausgeschlossener Zutat, Ernährungsweise und Unverträglichkeiten:
+
+![Screenshot der Rezeptsuche mit Filtern](./frontend/public/images/zutaten-diet-ausschluss-unvertraeglichkeiten.png)
+
+Gefundenes Rezept mit Allergenen, Alternativen und nicht verwendeter Zutat:
+
+![Screenshot eines gefundenen veganen Rezepts](./frontend/public/images/zutaten-diet-ausschluss-unvertraeglichkeiten-ergebnis.png)
 
 ## Funktionen
 
@@ -26,8 +32,6 @@ Hinweis: Das Backend läuft auf dem Render Free-Tier. Wenn es länger nicht benu
 - Allergene und mögliche Alternativen anzeigen
 - KI-Rezept generieren, wenn kein passendes Rezept gefunden wird
 - Rezeptbilder generieren oder neu generieren
-- Rezepte vorlesen lassen
-- Sprachbefehle für Vorlesen, Pause, Weiter, Stopp, Zurück und Vor
 - Grundlegende Accessibility-Verbesserungen wie Labels, Fieldsets, Skip-Link, Fokus-Stile und Live-Statusmeldungen
 - Responsive Oberfläche für Desktop und kleinere Bildschirme
 
@@ -39,7 +43,6 @@ Frontend:
 - Vite
 - Tailwind CSS
 - Fetch API
-- Web Speech API für die Vorlesefunktion
 
 Backend:
 
@@ -48,7 +51,7 @@ Backend:
 - Uvicorn
 - Eigene Filterlogik für Zutaten, Unverträglichkeiten, vegetarisch und vegan
 - Groq API für KI-Rezepte
-- OpenAI API für optionale Bildgenerierung und Sprachbefehl-Erkennung
+- OpenAI API für optionale Bildgenerierung
 
 ## Lokal starten
 
@@ -90,7 +93,6 @@ Da ich noch keine Unit-Tests gelernt habe, teste ich die wichtigsten Funktionen 
 - Vegan auswählen: Rezepte mit Fleisch, Fisch, Ei, Milch oder normalem Käse sollen nicht erscheinen.
 - Vegetarisch auswählen: Fleisch und Fisch sollen ausgeschlossen werden.
 - `Tomate` eingeben und Histamin auswählen: Tomatenrezepte sollen wegen der Unverträglichkeit nicht vorgeschlagen werden.
-- Vorlesen starten, `Pause` sagen und danach `Weiter`: Die Wiedergabe soll pausiert bleiben, bis wirklich weitergesprochen wird.
 - Tastatur-Navigation prüfen: Formularelemente, Buttons und Rezeptkarten müssen erreichbar und sichtbar fokussiert sein.
 - Bildgenerierung testen: Bei Fehlern soll eine verständliche Meldung statt eines kaputten Bildes erscheinen.
 
@@ -104,14 +106,15 @@ Die App enthält mehrere Accessibility-Grundlagen, zum Beispiel:
 - Fokus-Stile für Tastaturbedienung
 - Statusmeldungen mit `aria-live`
 - Alternativtexte für Bilder
+- semantische Überschriften, Listen und Rezeptkarten
 
 Ich würde das Projekt nicht als vollständig WCAG-zertifiziert bezeichnen. Für ein Bewerbungsprojekt ist aber gut erklärbar, welche Accessibility-Punkte bereits umgesetzt wurden und welche man mit mehr Erfahrung noch weiter prüfen würde.
 
 ## Aktuelle Grenzen
 
 - Es gibt noch keine Benutzeraccounts oder Favoriten.
-- Die Sprachbefehle brauchen Mikrofonzugriff und eine funktionierende Backend-Konfiguration für Transkription.
 - Auf Render kann die App beim ersten Laden langsam reagieren.
+- Die KI-Funktionen hängen von gültigen API-Keys und externen Diensten ab.
 - Es gibt noch keine automatisierten Unit-Tests. Stattdessen gibt es einen manuellen Testplan, den ich Schritt für Schritt erklären kann.
 
 ## Was ich dabei gelernt habe

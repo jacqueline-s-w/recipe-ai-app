@@ -1,14 +1,12 @@
-from dotenv import load_dotenv
+﻿from dotenv import load_dotenv
 load_dotenv()
 
 import os
 import json
 import base64
 import hashlib
-from io import BytesIO
 import requests
 from groq import Groq
-from openai import OpenAI
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OAI_API_KEY = os.getenv("OAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -100,27 +98,6 @@ def generate_image_from_prompt(prompt: str) -> str | None:
 
     return f"https://recipe-ai-app-pbyc.onrender.com/static/images/{filename}"
 
-
-def transcribe_audio_command(audio_bytes: bytes, filename: str = "command.webm") -> str:
-    if not OAI_API_KEY:
-        raise RuntimeError("OAI_API_KEY fehlt.")
-
-    audio_file = BytesIO(audio_bytes)
-    audio_file.name = filename
-
-    client = OpenAI(api_key=OAI_API_KEY)
-    transcription = client.audio.transcriptions.create(
-        model="gpt-4o-mini-transcribe",
-        file=audio_file,
-        language="de",
-        prompt=(
-            "Transkribiere nur klar gesprochene deutsche Sprachbefehle für eine "
-            "Rezept-App. Mögliche Befehle sind: vorlesen, pause, weiter, stopp, "
-            "zurück, vor. Erfinde keinen Befehl bei Stille oder undeutlicher Sprache."
-        ),
-    )
-
-    return transcription.text.strip()
 
 
 def _fallback_recipe(ingredients: list[str]) -> dict:
@@ -263,3 +240,4 @@ Wichtige Regeln:
     except Exception as e:
         print("AI ERROR:", e)
         return _fallback_recipe(cleaned_ingredients)
+
