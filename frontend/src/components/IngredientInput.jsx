@@ -11,6 +11,10 @@ export default function IngredientInput({
   const [excludeIngredients, setExcludeIngredients] = useState('');
   const [dietaryPreference, setDietaryPreference] = useState('');
   const [intolerances, setIntolerances] = useState([]);
+  const [showAddIngredientHint, setShowAddIngredientHint] = useState(false);
+
+  const hasPendingInput = input.trim().length > 0;
+  const canSearch = ingredients.length > 0;
 
   function addIngredients(event) {
     event.preventDefault();
@@ -22,6 +26,7 @@ export default function IngredientInput({
 
     if (newIngredients.length === 0) return;
 
+    setShowAddIngredientHint(false);
     setIngredients((previousIngredients) => [
       ...previousIngredients,
       ...newIngredients,
@@ -47,7 +52,25 @@ export default function IngredientInput({
   function clearAllIngredients() {
     setIngredients([]);
     setInput('');
+    setShowAddIngredientHint(false);
     onClearResults();
+  }
+
+  function handleFindRecipes() {
+    if (hasPendingInput) {
+      setShowAddIngredientHint(true);
+      return;
+    }
+
+    onFindRecipes(
+      ingredients,
+      excludeIngredients
+        .split(',')
+        .map((ingredient) => ingredient.trim())
+        .filter(Boolean),
+      intolerances,
+      dietaryPreference,
+    );
   }
 
   const dietaryOptions = [
@@ -76,7 +99,13 @@ export default function IngredientInput({
         <input
           id="zutat"
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event) => {
+            setInput(event.target.value);
+            setShowAddIngredientHint(false);
+          }}
+          aria-describedby={
+            showAddIngredientHint ? 'add-ingredient-hint' : undefined
+          }
           className="min-h-11 w-full rounded border p-2 text-base"
           placeholder="z.B. Tomate, Käse, Basilikum"
         />
@@ -88,6 +117,17 @@ export default function IngredientInput({
           className="mt-3 min-h-11 w-full rounded bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto">
           Hinzufügen
         </button>
+
+        {showAddIngredientHint && (
+          <div
+            id="add-ingredient-hint"
+            role="alert"
+            className="mt-3 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-900">
+            Du hast noch Zutaten im Eingabefeld. Bitte klicke zuerst auf
+            <span className="font-semibold"> Hinzufügen</span>, bevor du nach
+            Rezepten suchst.
+          </div>
+        )}
 
         {ingredients.length > 0 && (
           <div className="mt-4">
@@ -199,20 +239,10 @@ export default function IngredientInput({
       <button
         type="button"
         aria-label="Rezepte anhand der eingegebenen Zutaten suchen"
-        onClick={() =>
-          onFindRecipes(
-            ingredients,
-            excludeIngredients
-              .split(',')
-              .map((ingredient) => ingredient.trim())
-              .filter(Boolean),
-            intolerances,
-            dietaryPreference,
-          )
-        }
-        disabled={loading || ingredients.length === 0}
+        onClick={handleFindRecipes}
+        disabled={loading || (!canSearch && !hasPendingInput)}
         className={`mt-4 min-h-11 w-full rounded px-4 py-2 font-medium text-white transition-colors ${
-          loading || ingredients.length === 0
+          loading || (!canSearch && !hasPendingInput)
             ? 'bg-gray-400'
             : 'bg-green-600 hover:bg-green-700'
         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}>
